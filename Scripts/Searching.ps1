@@ -2,7 +2,7 @@
 .SYNOPSIS
     Bloatware Killer - Kereső és kiértékelő modul
 .VERSION
-    0.1.1
+    0.1.2
 #>
 
 
