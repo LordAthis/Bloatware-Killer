@@ -1,0 +1,50 @@
+[
+  {
+    "Name": "Dell SupportAssist",
+    "RegistryName": "SupportAssist",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Kritikusan lassitja a rendszert, hatterben folyamatosan eszi a CPU-t."
+  },
+  {
+    "Name": "Dell SupportAssist Remediation",
+    "RegistryName": "SupportAssistRemediation",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Hires a hatterbeli kekhalal hurok es boot hibak okozasarol."
+  },
+  {
+    "Name": "Dell Digital Delivery",
+    "RegistryName": "DeliveryService",
+    "MinWinVersion": "7",
+    "Action": "Remove",
+    "RegistryBlock": false,
+    "Comment": "Pre-telepitett fizetos szoftverek letolteseert felelos szoftver."
+  },
+  {
+    "Name": "Dell Optimizer",
+    "RegistryName": "DellOptimizer",
+    "MinWinVersion": "11",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Telemetriat gyujt es feleslegesen modositja a CPU profilokat."
+  },
+  {
+    "Name": "SmartByte Network Service",
+    "RegistryName": "SmartByte",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Sulyos halozati lassulasokat es internet-szaggatast okozo bloatware."
+  },
+  {
+    "Name": "Dell Customer Connect",
+    "RegistryName": "DellCustomerConnect",
+    "MinWinVersion": "7",
+    "Action": "Remove",
+    "RegistryBlock": false,
+    "Comment": "Felesleges elegedettsegi kerdoivekkel zaklatja a felhasznalot."
+  }
+]
