@@ -1,11 +1,12 @@
+# Verzió: v0.1.16
+
 [
   {
     "Name": "Lenovo Vantage Service",
     "RegistryName": "VantageService",
     "MinWinVersion": "10",
     "Action": "Remove",
-    "RegistryBlock": false,
-    "Comment": "A lakossagi Vantage hatter-szolgaltatasa, tele van reklamokkal es akciokkal."
+    "Comment": "A lakossagi Vantage hatter-szolgaltatasa, tele van reklamokkal."
   },
   {
     "Name": "Lenovo Now",
@@ -21,7 +22,7 @@
     "MinWinVersion": "10",
     "Action": "Remove",
     "RegistryBlock": true,
-    "Comment": "Lenovo egyedi plug-in kezeloje, korabban tobb sulyos biztonsagi rese is volt."
+    "Comment": "Lenovo egyedi plug-in kezeloje, folyamatosan fut a hatterben."
   },
   {
     "Name": "Lenovo Smart Appearance",
