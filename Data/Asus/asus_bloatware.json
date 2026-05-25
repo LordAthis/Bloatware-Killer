@@ -1,0 +1,36 @@
+# Verzió: v0.1.16
+
+[
+  {
+    "Name": "Armoury Crate",
+    "RegistryName": "ArmouryCrate",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Rendkivul sulyos hatterfolyamatokat general, eszi a memoriat."
+  },
+  {
+    "Name": "ASUS System Control Interface",
+    "RegistryName": "AsusSystemControlInterface",
+    "MinWinVersion": "10",
+    "Action": "Keep",
+    "RegistryBlock": false,
+    "Comment": "Szukseges a funkciogombokhoz es a tapellatashoz, megtartando."
+  },
+  {
+    "Name": "MyASUS",
+    "RegistryName": "MyASUS",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": false,
+    "Comment": "Felesleges felugro regisztracios es hirdetesi ablakok."
+  },
+  {
+    "Name": "Link to MyASUS",
+    "RegistryName": "LinkToMyASUS",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Telefon-szinkronizalo extra, amit a Windows gyarilag is tud."
+  }
+]
