@@ -4,39 +4,46 @@
 #
 
 Write-Log "Killer modul elinditva. Takaritas megkezdodott..."
+Write-Host "-> Takaritas megkezdodott..." -ForegroundColor Cyan
 
-# AppX / UWP Alkalmazások törlése (pl. HP Smart)
+# --- 1. UWP / APPX (WINDOWS STORE) ALKALMAZÁSOK KIIRTÁSA ---
 foreach ($App in $ToKill) {
-    if ($App.RegistryName -eq "HPSmart" -or $App.RegistryName -eq "HPJumpstart") {
+    if ($App.RegistryName -eq "HPSmart" -or $App.RegistryName -eq "HPJumpstart" -or $App.RegistryName -eq "DellSmartByte" -or $App.RegistryName -eq "LenovoNow") {
         Write-Log "UWP Alkalmazas eltavolitasa: $($App.Name)"
+        Write-Host "[-] UWP alkalmazas eltavolitasa: $($App.Name)" -ForegroundColor Yellow
+        
+        # Jelenlegi felhasznalo es az elore optimalizalt (provisioned) csomagok torlese
         Get-AppxPackage -AllUsers | Where-Object { $_.Name -like "*$($App.RegistryName)*" } | Remove-AppxPackage -ErrorAction SilentlyContinue
         Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -like "*$($App.RegistryName)*" } | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
     }
 }
 
-# Hagyományos Win32 szoftverek eltávolítása a Registry Uninstall kulcsok alapján
+# --- 2. HAGYOMÁNYOS WIN32 SZOFTVEREK ÉS SZOLGÁLTATÁSOK KEZELÉSE ---
 $UninstallPaths = @(
     "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*",
     "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
 )
 
+# Gyors .NET/Registry gyorsitotar a telepitett elemekrol
 $InstalledItems = Get-ItemProperty $UninstallPaths -ErrorAction SilentlyContinue
 
 foreach ($App in $ToKill) {
-    # Biztonsági szolgáltatások leállítása törlés előtt (pl. HP Wolf Security)
-    $ServiceKeywords = @("HP", "Wolf", "SureClick", "Analytics")
+    # Szolgaltatasok leallitasa a gyarto kulcsszavai alapjan a torles elott, hogy ne fogjak le a fajlokat
+    $ServiceKeywords = @("HP", "Wolf", "SureClick", "Analytics", "Dell", "SupportAssist", "Lenovo", "Vantage", "ImController")
     foreach ($Keyword in $ServiceKeywords) {
-        $Services = Get-Service | Where-Object { $_.DisplayName -like "*$Keyword*" -or $_.Name -like "*$Keyword*" }
-        foreach ($Service in $Services) {
-            if ($Service.Status -eq "Running") {
-                Write-Log "Szolgaltatas leallitasa: $($Service.Name)"
-                Stop-Service -Name $Service.Name -Force -ErrorAction SilentlyContinue
-                Set-Service -Name $Service.Name -StartupType Disabled -ErrorAction SilentlyContinue
+        if ($App.Name -like "*$Keyword*" -or $App.RegistryName -like "*$Keyword*") {
+            $Services = Get-Service | Where-Object { $_.DisplayName -like "*$Keyword*" -or $_.Name -like "*$Keyword*" }
+            foreach ($Service in $Services) {
+                if ($Service.Status -eq "Running") {
+                    Write-Log "Szolgaltatas leallitasa: $($Service.Name)"
+                    Stop-Service -Name $Service.Name -Force -ErrorAction SilentlyContinue
+                    Set-Service -Name $Service.Name -StartupType Disabled -ErrorAction SilentlyContinue
+                }
             }
         }
     }
 
-    # Megkeressük a pontos UninstallString-et
+    # Megkeressuk a szoftverhez tartozo pontos uninstaller karakterláncot
     $Match = $InstalledItems | Where-Object { $_.DisplayName -like "*$($App.Name)*" -or $_.DisplayName -like "*$($App.RegistryName)*" }
     
     if ($Match) {
@@ -44,18 +51,24 @@ foreach ($App in $ToKill) {
             $Unstring = $Item.UninstallString
             if ($Unstring) {
                 Write-Log "Szoftver eltavolitasa folyamatban: $($App.Name)"
+                Write-Host "[-] Win32 szoftver eltavolitasa: $($App.Name)" -ForegroundColor Yellow
                 
-                # MSI alapú csendes eltávolítás előkészítése
+                # --- MSI ALAPÚ CSENDES ELTÁVOLÍTÁS ---
                 if ($Unstring -like "msiexec*") {
                     $Args = $Unstring -replace "msiexec.exe", "" -replace "/I", "/X"
                     $Args += " /qn /norestart"
-                    $Proc = [System.Diagnostics.Process]::Start("msiexec.exe", $Args.Trim())
-                    $Proc.WaitForExit()
-                } else {
-                    # Ha EXE alapú uninstaller, megpróbáljuk a standard csendes kapcsolókat
-                    # Levágjuk az idézőjeleket, ha vannak
+                    try {
+                        $Proc = [System.Diagnostics.Process]::Start("msiexec.exe", $Args.Trim())
+                        $Proc.WaitForExit()
+                    } catch {
+                        Write-Log "MSI Uninstaller hiba ennelf: $($App.Name)" "WARN"
+                    }
+                } 
+                # --- EXE ALAPÚ CSENDES ELTÁVOLÍTÁS (.NET PROCESS) ---
+                else {
                     $CleanUnstring = $Unstring -replace '"', ''
                     if ($CleanUnstring -like "*.exe*") {
+                        # Kettevágjuk az uninstaller utvonalat es a gyari kapcsoloit
                         $ExePath = $CleanUnstring.Substring(0, $CleanUnstring.IndexOf(".exe") + 4)
                         $Args = "/S /silent /verysilent /qn /norestart"
                         try {
@@ -71,29 +84,33 @@ foreach ($App in $ToKill) {
         }
     }
 
-    # --- REGISTRY BLOKKOLÁS (IFEO TILTÁS) ---
+    # --- 3. REGISTRY BLOKKOLÁS (IFEO TILTÁS) ---
     if ($App.RegistryBlock) {
         Write-Log "Registry tiltas alkalmazasa a kovetkezohoz: $($App.Name)"
+        Write-Host "[*] Ujratelepites elleni vedelem (IFEO) beallitasa: $($App.Name)" -ForegroundColor Blue
+        
         $IfeoPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\$($App.RegistryName).exe"
         if (-not (Test-Path $IfeoPath)) {
             New-Item -Path $IfeoPath -Force | Out-Null
         }
-        # Beállítjuk a debugger kulcsot egy nem létező fájlra, így a program soha többé nem tud elindulni
+        # A Debugger ertek atiranyitasa egy azonnal kilepo parancsra (igy ha a gyarto pusholja, sem fog tudni lefutni)
         Set-ItemProperty -Path $IfeoPath -Name "Debugger" -Value "cmd.exe /c exit" -Force
     }
 }
 
-# Makacs HP shortcut-ok és reklámmappák törlése a lemezről
+# --- 4. GYÁRTÓI REKLÁMMAPPÁK ÉS PARANCSIKONOK ERŐSZAKOS TÖRLÉSE ---
 $GarbagePaths = @(
     "C:\ProgramData\HP\TCO",
     "C:\Online Services",
-    "C:\Users\Public\Desktop\TCO Certified.lnk"
+    "C:\Users\Public\Desktop\TCO Certified.lnk",
+    "C:\ProgramFiles\Dell\DigitalDelivery",
+    "C:\ProgramData\Dell\SARemediation"
 )
 foreach ($Path in $GarbagePaths) {
     if (Test-Path $Path) {
         Remove-Item -Path $Path -Force -Recurse -ErrorAction SilentlyContinue
-        Write-Log "Szemet konyvtar/parancsikon torolve: $Path"
+        Write-Log "Szemet mappa/parancsikon torolve: $Path"
     }
 }
 
-Write-Host "`nA takaritas befejezodott! Ellenorizd a logfajlt a reszletekert." -ForegroundColor Green
+Write-Host "`nA takaritas sikeresen befejezodott! Ellenorizd a logfajlt." -ForegroundColor Green
