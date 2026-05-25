@@ -1,5 +1,9 @@
 [
   {
+    "FileVersion": "v0.1.16",
+    "Description": "RTS Bloatware Killer - HP Laptop es Desktop PC adatbazis."
+  },
+  {
     "Name": "HP Support Assistant",
     "RegistryName": "HP.SupportAssistant",
     "MinWinVersion": "10",
