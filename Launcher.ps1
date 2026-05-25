@@ -2,9 +2,8 @@
 # Aktuális Fájl: Launcher.ps1
 # Bloatware Killer Launcher - Az RTS ökoszisztéma része.
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.2
+# Verzió v0.1.3
 #
-
 
 # --- 1. JOGOSULTSÁG EMELÉS .NET ALAPON ---
 $Identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
@@ -22,6 +21,7 @@ if (-not $IsAdmin) {
 
 # --- KÖRNYEZETI VÁLTOZÓK ---
 $TargetDir = "C:\Windows\RTS-Scripts"
+$TargetLauncher = [System.IO.Path]::Combine($TargetDir, "Launcher.ps1")
 $LogDir = [System.IO.Path]::Combine($TargetDir, "LOG")
 $TimeStamp = [System.DateTime]::Now.ToString("yyyyMMdd_HHmmss")
 $LogFile = [System.IO.Path]::Combine($LogDir, "BloatwareKiller_$TimeStamp.log")
@@ -37,9 +37,54 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Bloatware Killer v0.1 elinditva."
+Write-Log "Bloatware Killer v0.1.3 elinditva."
 
-# --- 2. TÁPELLÁTÁS ÉS AKKUMULÁTOR ELLENŐRZÉS ---
+# --- 2. VERZIÓELLENŐRZÉS ÉS TELEPÍTÉS/FRISSÍTÉS .NET SEGÍTSÉGÉVEL ---
+Function Get-ScriptVersion {
+    Param([string]$FilePath)
+    if (-not [System.IO.File]::Exists($FilePath)) { return "0.0.0" }
+    # Beolvassuk az elso 10 sort a fejlecbol
+    $Header = Get-Content -Path $FilePath -TotalCount 10
+    foreach ($Line in $Header) {
+        if ($Line -match "Verzió\s+v?(\d+\.\d+\.\d+)") {
+            return $Matches[1]
+        }
+    }
+    return "0.0.0"
+}
+
+$CurrentVersionString = Get-ScriptVersion -FilePath $PSCommandPath
+$InstalledVersionString = Get-ScriptVersion -FilePath $TargetLauncher
+
+$CurrentVersion = [System.Version]$CurrentVersionString
+$InstalledVersion = [System.Version]$InstalledVersionString
+
+Write-Log "Futasi verzio: $CurrentVersionString | Telepitett verzio: $InstalledVersionString"
+
+# Ha nem a szervizmappából futunk, VAGY a futtatott verzió újabb, mint ami a gépen van
+if ($PSScriptRoot -ne $TargetDir -or $CurrentVersion -gt $InstalledVersion) {
+    if ($CurrentVersion -gt $InstalledVersion) {
+        Write-Log "Ujabb verzio detektalva ($CurrentVersionString > $InstalledVersionString). Frissites..."
+    } else {
+        Write-Log "A script elszor fut errol a geprol. Telepites a rendszerszintu mappaba..."
+    }
+
+    if (-not [System.IO.Directory]::Exists($TargetDir)) { 
+        [System.IO.Directory]::CreateDirectory($TargetDir) | Out-Null 
+    }
+    
+    # Szkriptek átmásolása (felülírás kényszerítésével)
+    Copy-Item -Path "$PSScriptRoot\*" -Destination $TargetDir -Recurse -Force
+    Write-Log "Szinkronizacio kesz. Ujrainditas az RTS kornyezetbol..."
+    
+    $RtsProcess = New-Object System.Diagnostics.ProcessStartInfo
+    $RtsProcess.FileName = "powershell.exe"
+    $RtsProcess.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$TargetLauncher`""
+    [System.Diagnostics.Process]::Start($RtsProcess) | Out-Null
+    Exit
+}
+
+# --- 3. TÁPELLÁTÁS ÉS AKKUMULÁTOR ELLENŐRZÉS ---
 try {
     $PowerStatus = [System.Windows.Forms.SystemInformation]::PowerStatus
     if ($PowerStatus.BatteryChargeStatus -ne "NoBattery") {
@@ -54,7 +99,7 @@ try {
     Write-Log "Nem sikerult a .NET tapellatas-ellenorzes, atugras..." "WARN"
 }
 
-# --- 3. PIHENŐ MÓD MEGGÁTLÁSA (TÍPUSKONVERZIÓS HIBA JAVÍTVA) ---
+# --- 4. PIHENŐ MÓD MEGGÁTLÁSA ---
 Write-Log "Alvo allapot letiltasa a script futasanak idejere..."
 $Signature = @'
 [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
@@ -62,25 +107,8 @@ public static extern uint SetThreadExecutionState(uint esFlags);
 '@
 $Win32Sleep = Add-Type -MemberDefinition $Signature -Name "Win32Sleep" -Namespace "Win32" -PassThru
 
-# Explicit [uint32] konverzió alkalmazása a túlcsordulás megelőzésére
 [uint32]$Flags = 0x80000001
 $Win32Sleep::SetThreadExecutionState($Flags) | Out-Null
-
-# --- 4. TELEPÍTÉS ELLENŐRZÉSE ÉS SZINKRONIZÁLÁS ---
-Write-Log "Telepitesi kornyezet ellenorzese itt: $TargetDir"
-if ($PSScriptRoot -ne $TargetDir) {
-    Write-Log "A script nem a rendszerszintu mappabol fut. Masolas es szinkronizalas..."
-    if (-not [System.IO.Directory]::Exists($TargetDir)) { [System.IO.Directory]::CreateDirectory($TargetDir) | Out-Null }
-    
-    Copy-Item -Path "$PSScriptRoot\*" -Destination $TargetDir -Recurse -Force
-    Write-Log "Szkriptek atmasolva. Ujrainditas a rendszerszintu kornyezetbol..."
-    
-    $RtsProcess = New-Object System.Diagnostics.ProcessStartInfo
-    $RtsProcess.FileName = "powershell.exe"
-    $RtsProcess.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$TargetDir\Launcher.ps1`""
-    [System.Diagnostics.Process]::Start($RtsProcess) | Out-Null
-    Exit
-}
 
 # --- 5. RENDSZER- ÉS GYÁRTÓ DETEKTÁLÁS ---
 $OSVersion = [System.Environment]::OSVersion.Version.Major
@@ -101,4 +129,4 @@ if ([System.IO.File]::Exists($SearchingScript)) {
 # --- ALVÁS VISSZAÁLLÍTÁSA ---
 [uint32]$ResetFlags = 0x80000000
 $Win32Sleep::SetThreadExecutionState($ResetFlags) | Out-Null
-Write-Log "Bloatware Killer v0.1 futasa befejezodott."
+Write-Log "Bloatware Killer v0.1.3 futasa befejezodott."
