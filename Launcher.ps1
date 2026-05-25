@@ -2,15 +2,13 @@
 # Aktuális Fájl: Launcher.ps1
 # Bloatware Killer Launcher - Az RTS ökoszisztéma része.
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.5
+# Verzió v0.1.8
 #
 
 # --- 1. JOGOSULTSÁG EMELÉS .NET ALAPON ---
-$Identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-$Principal = New-Object System.Security.Principal.WindowsPrincipal($Identity)
-$IsAdmin = $Principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
-
-if (-not $IsAdmin) {
+$Identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+$Principal = New-Object Security.Principal.WindowsPrincipal($Identity)
+if (-not $Principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     $SelfProcess = New-Object System.Diagnostics.ProcessStartInfo
     $SelfProcess.FileName = "powershell.exe"
     $SelfProcess.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
@@ -19,14 +17,17 @@ if (-not $IsAdmin) {
     Exit
 }
 
-# --- KÖRNYEZETI VÁLTOZÓK (JAVÍTVA A KÉRT REPO ÚTVONALRA) ---
+# --- KÖRNYEZETI VÁLTOZÓK ---
 $TargetDir = "C:\Windows\Scripts\Bloatware-Killer"
 $TargetLauncher = [System.IO.Path]::Combine($TargetDir, "Launcher.ps1")
 $LogDir = [System.IO.Path]::Combine($TargetDir, "LOG")
-$TimeStamp = [System.DateTime]::Now.ToString("yyyyMMdd_HHmmss")
-$LogFile = [System.IO.Path]::Combine($LogDir, "BloatwareKiller_$TimeStamp.log")
 
-# Rendszermappák létrehozása .NET alapon
+# Fix napi logfájl név, hogy az újraindított folyamat is UGYANEBBEN folytassa a munkát!
+$DailyStamp = [System.DateTime]::Now.ToString("yyyyMMdd")
+$LogFile = [System.IO.Path]::Combine($LogDir, "BloatwareKiller_$DailyStamp.log")
+
+$OldWrongDir = "C:\Windows\RTS-Scripts"
+
 if (-not [System.IO.Directory]::Exists($TargetDir)) { [System.IO.Directory]::CreateDirectory($TargetDir) | Out-Null }
 if (-not [System.IO.Directory]::Exists($LogDir)) { [System.IO.Directory]::CreateDirectory($LogDir) | Out-Null }
 
@@ -37,17 +38,26 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Bloatware Killer v0.1.5 elinditva."
+Write-Log "--------------------------------------------------"
+Write-Log "Launcher v0.1.7 elinditva."
 
-# --- 2. INTENSÍV VERZIÓELLENŐRZÉS ÉS FRISSÍTÉSI LOGIKÁK ---
+if ([System.IO.Directory]::Exists($OldWrongDir)) {
+    try {
+        Write-Log "Regi, hibas mappa detektalva ($OldWrongDir). Automatikus torles..."
+        Remove-Item -Path $OldWrongDir -Force -Recurse -ErrorAction SilentlyContinue
+        Write-Log "A regi mappa sikeresen felszamolva."
+    } catch {
+        Write-Log "Nem sikerult a regi mappa torlese: $_" "WARN"
+    }
+}
+
+# --- 2. VERZIÓELLENŐRZÉS ÉS BIZTONSÁGOS FRISSÍTÉS ---
 Function Get-ScriptVersion {
     Param([string]$FilePath)
     if (-not [System.IO.File]::Exists($FilePath)) { return "0.0.0" }
     $Header = Get-Content -Path $FilePath -TotalCount 10
     foreach ($Line in $Header) {
-        if ($Line -match "Verzió\s+v?(\d+\.\d+\.\d+)") {
-            return $Matches[1]
-        }
+        if ($Line -match "Verzió\s+v?(\d+\.\d+\.\d+)") { return $Matches[1] }
     }
     return "0.0.0"
 }
@@ -60,34 +70,30 @@ $InstalledVersion = [System.Version]$InstalledVersionString
 
 Write-Log "Futasi verzio: $CurrentVersionString | Telepitett korabbi verzio: $InstalledVersionString"
 
-# Ha külső helyről futunk, VAGY frissebb verziót hoztunk a gépre
 if ($PSScriptRoot -ne $TargetDir -or $CurrentVersion -gt $InstalledVersion) {
     try {
         if ($CurrentVersion -gt $InstalledVersion) {
             Write-Log "Ujabb verzio detektalva ($CurrentVersionString > $InstalledVersionString). Masolas..."
         } else {
-            Write-Log "Elso telepites a megadott RTS mappaba ($TargetDir)..."
+            Write-Log "Elso telepites az RTS mappaba ($TargetDir)..."
         }
 
-        # Forrásfájlok átmásolása a központi mappába
         Copy-Item -Path "$PSScriptRoot\*" -Destination $TargetDir -Recurse -Force
         Write-Log "A masolas es a fajlok elhelyezese sikeresen megtortent."
-        
     } catch {
-        Write-Log "HIBA a masolas kozben: $_" "ERROR"
-        Write-Host "[!] Hiba tortent a szinkronizalas soran. Ellenorizd a jogokat!" -ForegroundColor Red
+        Write-Log "KRITIKUS HIBA a masolas kozben: $_" "ERROR"
+        Write-Host "[!] Hiba tortent a szinkronizalas soran!" -ForegroundColor Red
     }
 
-    # Megnyitjuk a frissítési naplót ellenőrzésre, hogy a szervizes lássa mi történt
-    Write-Log "Frissitesi log automatikus megnyitasa ellenorzesre..."
+    # MEGAKADÁLYOZZUK AZ ÁTUGRÁST: Megnyitjuk a logot és megállunk, hogy látszódjon ha piros hiba volt!
+    Write-Log "Frissitesi folyamat kesz. Log megnyitasa es konzol megallitasa..."
     [System.Diagnostics.Process]::Start("notepad.exe", $LogFile) | Out-Null
 
-    Write-Host "`n[FRISSÍTÉS] A szkriptek frissitve lettek a kozponti RTS mappaba!" -ForegroundColor Green
-    Write-Host "A frissitesi naplo megnyilt a hatterben." -ForegroundColor Gray
-    Write-Host "Nyomj meg egy gombot az uj verzio elinditasahoz..." -ForegroundColor Cyan
+    Write-Host "`n[FRISSÍTÉS] A szkriptek frissitve lettek a vegleges helyre!" -ForegroundColor Green
+    Write-Host "A frissitesi naplo megnyilt ellenorzesre." -ForegroundColor Gray
+    Write-Host "Nyomj meg egy gombot az uj verzio tiszta inditasahoz..." -ForegroundColor Cyan
     [System.Console]::ReadKey($true) | Out-Null
 
-    # Új verzió indítása a végleges helyéről
     $RtsProcess = New-Object System.Diagnostics.ProcessStartInfo
     $RtsProcess.FileName = "powershell.exe"
     $RtsProcess.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$TargetLauncher`""
@@ -95,56 +101,48 @@ if ($PSScriptRoot -ne $TargetDir -or $CurrentVersion -gt $InstalledVersion) {
     Exit
 }
 
-# --- 3. TÁPELLÁTÁS ÉS AKKUMULÁTOR ELLENŐRZÉS ---
+# --- 3. TÁPELLÁTÁS ÉS ALVÁSKEZELÉS ---
 try {
     $PowerStatus = [System.Windows.Forms.SystemInformation]::PowerStatus
     if ($PowerStatus.BatteryChargeStatus -ne "NoBattery") {
-        Write-Log "Hordozhato eszkoz detektalva. Tapellatas ellenorzese..."
         if ($PowerStatus.PowerLineStatus -eq "Offline") {
-            Write-Log "FIGYELMEZTETES: A gep akkumulatorrol uzemel! Csatlakoztasd a toltot!" "WARN"
+            Write-Log "A gep akkumulatorrol uzemel!" "WARN"
             Write-Host "[!] FIGYELMEZTETES: A gep akkumulatorrol uzemel!" -ForegroundColor Yellow
-        } else {
-            Write-Log "Tapkabel csatlakoztatva."
         }
     }
-} catch {
-    Write-Log "Nem sikerult a .NET tapellatas-ellenorzes, atugras..." "WARN"
-}
+} catch { Write-Log "Nem sikerult a .NET tapellatas-ellenorzes." "WARN" }
 
-# --- 4. PIHENŐ MÓD MEGGÁTLÁSA ---
-Write-Log "Alvo allapot letiltasa a script futasanak idejere..."
 $Signature = @'
 [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 public static extern uint SetThreadExecutionState(uint esFlags);
 '@
 $Win32Sleep = Add-Type -MemberDefinition $Signature -Name "Win32Sleep" -Namespace "Win32" -PassThru
-
 [uint32]$Flags = 0x80000001
 $Win32Sleep::SetThreadExecutionState($Flags) | Out-Null
 
-# --- 5. RENDSZER- ÉS GYÁRTÓ DETEKTÁLÁS ---
+# --- 4. HARDVER DETEKTÁLÁS ---
 $OSVersion = [System.Environment]::OSVersion.Version.Major
 if ($OSVersion -eq 10 -and [System.Environment]::OSVersion.Version.Build -ge 22000) { $OSVersion = 11 }
-
 $ComputerVendor = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
-Write-Log "Rendszer: Windows $OSVersion | Gyarto: $ComputerVendor"
+Write-Log "Rendszer vizsgalat: Windows $OSVersion | Gyarto: $ComputerVendor"
 
-# --- 6. KERESŐ MODUL MEGHÍVÁSA ---
+# --- 5. KERESŐ MEGHÍVÁSA ---
 $SearchingScript = [System.IO.Path]::Combine($TargetDir, "Scripts", "Searching.ps1")
 if ([System.IO.File]::Exists($SearchingScript)) {
     . $SearchingScript
 } else {
-    Write-Log "Hiba: A Searching.ps1 nem talalhato itt: $SearchingScript" "ERROR"
+    Write-Log "Kritikus hiba: A Searching.ps1 hianyzik: $SearchingScript" "ERROR"
     Write-Host "[!] Kritikus hiba: A Searching.ps1 hianyzik!" -ForegroundColor Red
 }
 
-# --- ALVÁS VISSZAÁLLÍTÁSA ---
+# --- LEZÁRÁS ÉS AUTOMATIKUS LOG MEGNYITÁS ---
 [uint32]$ResetFlags = 0x80000000
 $Win32Sleep::SetThreadExecutionState($ResetFlags) | Out-Null
-Write-Log "Bloatware Killer v0.1.5 futasa sikeresen befejezodott."
+Write-Log "Bloatware Killer v0.1.7 futasa befejezodott."
 
-# --- AZ ABLAK BEZÁRÁSÁNAK ABSZOLÚT MEGGÁTLÁSA ---
-Write-Host "`n[VEGZETT] A folyamat befejezodott." -ForegroundColor Green
-Write-Host "Nyomj meg egy gombot a konzolablak bezarasahoz..." -ForegroundColor Cyan
-Write-Log "Szkript megallitva a Launcher vegen, varakozas a gombnyomasra..."
+Write-Log "Minden folyamat lezárult. Vegleges logfajl megnyitasa..."
+[System.Diagnostics.Process]::Start("notepad.exe", $LogFile) | Out-Null
+
+Write-Host "`n[VEGZETT] A folyamat befejezodott. A logfajl megnyilt a hatterben." -ForegroundColor Green
+Write-Host "Nyomj meg egy gombot a konzol bezarasahoz..." -ForegroundColor Cyan
 [System.Console]::ReadKey($true) | Out-Null
