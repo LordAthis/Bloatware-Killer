@@ -1,7 +1,7 @@
 #
 # Aktuális Fájl: ReInstall.ps1
 # Bloatware Killer - Visszaallito / Helyreallito modul (.NET alapon)
-# Verzió: 0.1.2
+# Verzió: 0.1.5
 #
 
 
