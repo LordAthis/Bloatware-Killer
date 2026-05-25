@@ -2,7 +2,7 @@
 # Aktuális Fájl: Searching.ps1
 # Bloatware Killer - Kereső és kiértékelő modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.10
+# Verzió v0.1.11
 #
 
 Function Write-Log {
@@ -12,7 +12,7 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Searching modul v0.1.10 elinditva."
+Write-Log "Searching modul v0.1.11 elinditva."
 
 $VendorFolder = ""
 if ($ComputerVendor -like "*HP*" -or $ComputerVendor -like "*Hewlett-Packard*") { $VendorFolder = "Hp" }
@@ -61,7 +61,7 @@ foreach ($App in $BloatwareDatabase) {
 
 Clear-Host
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "          BLOATWARE KILLER v0.1.10 - EREDMENYEK     " -ForegroundColor Cyan
+Write-Host "          BLOATWARE KILLER v0.1.11 - EREDMENYEK     " -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "Rendszer: Windows $OSVersion | Gyarto: $ComputerVendor"
 Write-Host "--------------------------------------------------"
@@ -76,11 +76,6 @@ if ($ToKill.Count -gt 0) {
     $Choice = Read-Host "`nSzeretned elinditani a takaritast? (I/N)"
     if ($Choice -eq "I" -or $Choice -eq "i") {
         Write-Log "Szervizes joovaahagyta a takaritast. Elokeszites a Killer.ps1 inditasara..."
-        
-        # JAVÍTVA: Színhelyes Magenta várakozás, nem fog hibát dobni!
-        Write-Host "`n[TESZT] Nyomj meg egy gombot a Killer.ps1 modul betoltese elott..." -ForegroundColor Magenta
-        [System.Console]::ReadKey($true) | Out-Null
-        
         $KillerScriptPath = "$TargetDir\Scripts\Killer.ps1"
         . $KillerScriptPath
     } else {
