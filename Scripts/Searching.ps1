@@ -1,9 +1,8 @@
-<#
-.SYNOPSIS
-    Bloatware Killer - Kereső és kiértékelő modul
-.VERSION
-    0.1.2
-#>
+#
+# Aktuális Fájl: Searching.ps1
+# Bloatware Killer - Kereső és kiértékelő modul
+# Verzió: 0.1.2
+#
 
 
 Write-Log "Kereso modul elinditva..."
