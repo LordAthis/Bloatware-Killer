@@ -1,0 +1,15 @@
+# RTS Bloatware Killer - Git Ignore konfiguracio
+
+# Szervizszintu helyi naplofajlok es konyvtaruk
+LOG/
+*.log
+
+# Ideiglenes Windows rendszerfajlok
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Fejlesztoi kornyezet (VS Code / PowerShell) maradvanyai
+.vscode/
+.history/
+*.log.*
