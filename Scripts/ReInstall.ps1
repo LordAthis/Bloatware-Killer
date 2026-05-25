@@ -1,8 +1,10 @@
 #
+# Aktuális Fájl: ReInstall.ps1
 # Bloatware Killer - Visszaallito / Helyreallito modul (.NET alapon)
 # Verzió: 0.1.2
 # A kommentek ekezetesek, a kiirt uzenetek ekezetmentesek.
 #
+
 
 Write-Log "ReInstall modul elinditva. Helyreallitas megkezdese..."
 Clear-Host
@@ -14,9 +16,9 @@ $RestoredCount = 0
 
 foreach ($App in $AlreadyCleaned) {
     if ($App.RegistryBlock) {
-        $IfeoPath = "SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image Execution Options\$($App.RegistryName).exe"
+        # Elgépelés javítva a pontos Windows elérési útra
+        $IfeoPath = "SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\$($App.RegistryName).exe"
         
-        # .NET-alapú Registry kezelés a maximális stabilitásért
         $RegKey = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($IfeoPath, $true)
         
         if ($RegKey) {
@@ -39,7 +41,7 @@ foreach ($App in $AlreadyCleaned) {
 
 Write-Host "--------------------------------------------------"
 if ($RestoredCount -gt 0) {
-    Write-Host "[VÉGZETT] A kivalasztott szoftverek tiltasa feloldva." -ForegroundColor Green
+    Write-Host "[VEGZETT] A kivalasztott szoftverek tiltasa feloldva." -ForegroundColor Green
     Write-Host "Most mar ujratelepithetok es futtathatok a gyari programok." -ForegroundColor Green
 } else {
     Write-Host "[INFO] Nem talaltam aktivalt registry tiltast a rendszerben." -ForegroundColor Yellow
@@ -47,6 +49,5 @@ if ($RestoredCount -gt 0) {
 
 Write-Log "Helyreallitasi folyamat lezarva. Varakozas a felhasznalora..."
 
-# --- AZ ÁLTALAD JELZETT HIBA JAVÍTÁSA: A SCRIPT MEGÁLLÍTÁSA ---
-Write-Host "`nNyomj meg egy gombot a kilepeshez..." -ForegroundColor Windows
+Write-Host "`nNyomj meg egy gombot a kilepeshez..." -ForegroundColor Cyan
 [System.Console]::ReadKey($true) | Out-Null
