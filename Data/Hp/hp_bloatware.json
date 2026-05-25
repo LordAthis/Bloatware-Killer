@@ -1,0 +1,26 @@
+[
+  {
+    "Name": "HP Support Assistant",
+    "RegistryName": "HP.SupportAssistant",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Lassítja a rendszert, feleslegesen fut a háttérben."
+  },
+  {
+    "Name": "HP System Event Utility",
+    "RegistryName": "HP.SystemEventUtility",
+    "MinWinVersion": "7",
+    "Action": "Keep",
+    "RegistryBlock": false,
+    "Comment": "Funkciógombokért felelős, megtartandó, de indítása tiltható."
+  },
+  {
+    "Name": "HP JumpStart Bridge",
+    "RegistryName": "HP.JumpStart",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "A képernyőn látható Dropbox/Adobe reklámokért felelős."
+  }
+]
