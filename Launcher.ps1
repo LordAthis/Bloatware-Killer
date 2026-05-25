@@ -2,7 +2,7 @@
 # Aktuális Fájl: Launcher.ps1
 # Bloatware Killer Launcher - Az RTS ökoszisztéma része.
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.9
+# Verzió v0.1.10
 #
 
 # --- 1. JOGOSULTSÁG EMELÉS .NET ALAPON ---
@@ -38,7 +38,7 @@ Function Write-Log {
 }
 
 Write-Log "--------------------------------------------------"
-Write-Log "Launcher v0.1.9 elinditva."
+Write-Log "Launcher v0.1.10 elinditva."
 
 if ([System.IO.Directory]::Exists($OldWrongDir)) {
     try {
@@ -48,13 +48,15 @@ if ([System.IO.Directory]::Exists($OldWrongDir)) {
     } catch { Write-Log "Nem sikerult a regi mappa torlese: $_" "WARN" }
 }
 
-# --- 2. VERZIÓELLENŐRZÉS ÉS BIZTONSÁGOS FRISSÍTÉS ---
+# --- 2. VERZIÓELLENŐRZÉS JAVÍTVA (HASHTABLE HELYETT STRING) ---
 Function Get-ScriptVersion {
     Param([string]$FilePath)
     if (-not [System.IO.File]::Exists($FilePath)) { return "0.0.0" }
     $Header = Get-Content -Path $FilePath -TotalCount 10
     foreach ($Line in $Header) {
-        if ($Line -match "Verzió\s+v?(\d+\.\d+\.\d+)") { return $Matches }
+        if ($Line -match "Verzió\s+v?(\d+\.\d+\.\d+)") {
+            return $Matches[1] # JAVÍTVA: Explicit kinyerjük a string csoportot!
+        }
     }
     return "0.0.0"
 }
@@ -82,14 +84,7 @@ if ($PSScriptRoot -ne $TargetDir -or $CurrentVersion -gt $InstalledVersion) {
         Write-Host "[!] Hiba tortent a szinkronizalas soran!" -ForegroundColor Red
     }
 
-    Write-Log "Frissitesi folyamat kesz. Log megnyitasa es konzol megallitasa..."
-    [System.Diagnostics.Process]::Start("notepad.exe", $LogFile) | Out-Null
-
-    Write-Host "`n[FRISSÍTÉS] A szkriptek frissitve lettek a vegleges helyre!" -ForegroundColor Green
-    Write-Host "A frissitesi naplo megnyilt ellenorzesre." -ForegroundColor Gray
-    Write-Host "Nyomj meg egy gombot az uj verzio tiszta inditasahoz..." -ForegroundColor Cyan
-    [System.Console]::ReadKey($true) | Out-Null
-
+    Write-Log "Frissitesi folyamat kesz. Újraindítás..."
     $RtsProcess = New-Object System.Diagnostics.ProcessStartInfo
     $RtsProcess.FileName = "powershell.exe"
     $RtsProcess.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$TargetLauncher`""
@@ -97,8 +92,9 @@ if ($PSScriptRoot -ne $TargetDir -or $CurrentVersion -gt $InstalledVersion) {
     Exit
 }
 
-# --- 3. TÁPELLÁTÁS ÉS ALVÁSKEZELÉS ---
+# --- 3. TÁPELLÁTÁS ELLENŐRZÉS JAVÍTVA (FORMS SZERELVÉNY BETÖLTÉSE) ---
 try {
+    [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
     $PowerStatus = [System.Windows.Forms.SystemInformation]::PowerStatus
     if ($PowerStatus.BatteryChargeStatus -ne "NoBattery") {
         if ($PowerStatus.PowerLineStatus -eq "Offline") {
@@ -108,21 +104,22 @@ try {
     }
 } catch { Write-Log "Nem sikerult a .NET tapellatas-ellenorzes." "WARN" }
 
+# --- 4. ALVÁSKEZELÉS JAVÍTVA (long / Int64 ALAPON A TÚLCSORDULÁS ELLEN) ---
 $Signature = @'
 [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-public static extern uint SetThreadExecutionState(uint esFlags);
+public static extern uint SetThreadExecutionState(long esFlags);
 '@
 $Win32Sleep = Add-Type -MemberDefinition $Signature -Name "Win32Sleep" -Namespace "Win32" -PassThru
-[uint32]$Flags = 0x80000001
-$Win32Sleep::SetThreadExecutionState($Flags) | Out-Null
+# ES_CONTINUOUS (0x80000000) | ES_SYSTEM_REQUIRED (0x00000001)
+$Win32Sleep::SetThreadExecutionState(0x80000001) | Out-Null
 
-# --- 4. HARDVER DETEKTÁLÁS ---
+# --- 5. HARDVER DETEKTÁLÁS ---
 $OSVersion = [System.Environment]::OSVersion.Version.Major
 if ($OSVersion -eq 10 -and [System.Environment]::OSVersion.Version.Build -ge 22000) { $OSVersion = 11 }
 $ComputerVendor = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
 Write-Log "Rendszer vizsgalat: Windows $OSVersion | Gyarto: $ComputerVendor"
 
-# --- 5. KERESŐ MEGHÍVÁSA ---
+# --- 6. KERESŐ MEGHÍVÁSA ---
 $SearchingScript = "$TargetDir\Scripts\Searching.ps1"
 if ([System.IO.File]::Exists($SearchingScript)) {
     . $SearchingScript
@@ -131,12 +128,11 @@ if ([System.IO.File]::Exists($SearchingScript)) {
     Write-Host "[!] Kritikus hiba: A Searching.ps1 hianyzik!" -ForegroundColor Red
 }
 
-# --- LEZÁRÁS ÉS AUTOMATIKUS LOG MEGNYITÁS ---
-# JAVÍTVA: [uint32] helyett direkt C# bitmaszk tiszta átadással a túlcsordulási hiba ellen
-$Win32Sleep::SetThreadExecutionState([uint32]0x80000000) | Out-Null
-Write-Log "Bloatware Killer v0.1.9 futasa befejezodott."
+# --- LEZÁRÁS ÉS TISZTA ALVÁSMÓD VISSZAÁLLÍTÁS ---
+$Win32Sleep::SetThreadExecutionState(0x80000000) | Out-Null
+Write-Log "Bloatware Killer v0.1.10 futasa befejezodott."
 
-Write-Log "Minden folyamat lezárult. Vegleges logfajl megnyitasa..."
+Write-Log "Minden folyamat lezarult. Vegleges logfajl megnyitasa..."
 [System.Diagnostics.Process]::Start("notepad.exe", $LogFile) | Out-Null
 
 Write-Host "`n[VEGZETT] A folyamat befejezodott. A logfajl megnyilt a hatterben." -ForegroundColor Green
