@@ -2,10 +2,18 @@
 # Aktuális Fájl: Searching.ps1
 # Bloatware Killer - Kereső és kiértékelő modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.5
+# Verzió v0.1.8
 #
 
-Write-Log "Kereso modul elinditva..."
+# Biztosítjuk a folyamatos logírást a modulon belül is
+Function Write-Log {
+    Param([string]$Message, [string]$Type = "INFO")
+    $LogLine = "[$([System.DateTime]::Now.ToString('yyyy-MM-dd HH:mm:ss'))] [$Type] $Message"
+    Write-Host $LogLine
+    [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
+}
+
+Write-Log "Searching modul v0.1.7 elinditva."
 
 $VendorFolder = ""
 if ($ComputerVendor -like "*HP*" -or $ComputerVendor -like "*Hewlett-Packard*") { $VendorFolder = "Hp" }
@@ -13,19 +21,18 @@ elseif ($ComputerVendor -like "*Dell*") { $VendorFolder = "Dell" }
 elseif ($ComputerVendor -like "*Lenovo*") { $VendorFolder = "Lenovo" }
 
 if (-not $VendorFolder) {
-    Write-Log "Nem tamogatott vagy ismeretlen gyarto: $ComputerVendor" "WARN"
+    Write-Log "Nem tamogatott gyarto: $ComputerVendor" "WARN"
     Exit
 }
 
 $JsonPath = [System.IO.Path]::Combine($TargetDir, "Data", $VendorFolder, "$($VendorFolder.ToLower())_bloatware.json")
 
 if (-not [System.IO.File]::Exists($JsonPath)) {
-    Write-Log "Nem talalhato adatbazis fajl ehhez a gyartohoz: $JsonPath" "ERROR"
+    Write-Log "Adatbazis hiany: $JsonPath" "ERROR"
     Exit
 }
 
 $BloatwareDatabase = Get-Content -Raw -Path $JsonPath | ConvertFrom-Json
-
 $UninstallPaths = @(
     "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*",
     "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
@@ -36,8 +43,8 @@ $ToKill = @()
 $AlreadyCleaned = @()
 
 $PastLogs = @()
-if ([System.IO.Directory]::Exists($LogDir)) {
-    $PastLogs = Get-ChildItem -Path $LogDir -Filter "*.log" -ErrorAction SilentlyContinue | Get-Content -ErrorAction SilentlyContinue
+if ([System.IO.File]::Exists($LogFile)) {
+    $PastLogs = Get-Content -Path $LogFile -ErrorAction SilentlyContinue
 }
 
 foreach ($App in $BloatwareDatabase) {
@@ -55,7 +62,7 @@ foreach ($App in $BloatwareDatabase) {
 
 Clear-Host
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "          BLOATWARE KILLER v0.1.4 - EREDMENYEK      " -ForegroundColor Cyan
+Write-Host "          BLOATWARE KILLER v0.1.7 - EREDMENYEK      " -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "Rendszer: Windows $OSVersion | Gyarto: $ComputerVendor"
 Write-Host "--------------------------------------------------"
@@ -64,16 +71,19 @@ if ($ToKill.Count -gt 0) {
     Write-Host "Eltavolitasra javasolt szoftverek:" -ForegroundColor Yellow
     foreach ($Item in $ToKill) {
         Write-Host " [-] $($Item.Name) (Magyarazat: $($Item.Comment))" -ForegroundColor Red
+        Write-Log "Kereses eredmenye - Eltavolitando: $($Item.Name)"
     }
     
     $Choice = Read-Host "`nSzeretned elinditani a takaritast? (I/N)"
     if ($Choice -eq "I" -or $Choice -eq "i") {
-        Write-Log "Szervizes joovaahagyta a takaritast. Killer.ps1 meghivasa..."
-        # Direkt meghívás, hogy a Killer.ps1 lefutása után visszatérjen ide a vezérlés
+        Write-Log "Szervizes joovaahagyta a takaritast. Killer.ps1 inditasa..."
         . [System.IO.Path]::Combine($TargetDir, "Scripts", "Killer.ps1")
+    } else {
+        Write-Log "Szervizes elutasitotta a takaritast." "WARN"
     }
 } else {
-    Write-Host "Nem talaltam aktiv eltavolitando gyartoi bloatware-t ezen a gepen." -ForegroundColor Green
+    Write-Host "Nem talaltam aktiv eltavolitando gyartoi bloatware-t." -ForegroundColor Green
+    Write-Log "Nem talalhato aktiv bloatware a rendszerben."
     
     if ($AlreadyCleaned.Count -gt 0) {
         Write-Host "`nKorabban mar torolve lettek errol a geprol:" -ForegroundColor Gray
@@ -81,9 +91,9 @@ if ($ToKill.Count -gt 0) {
             Write-Host " [V] $($Cleaned.Name)" -ForegroundColor Gray
         }
         
-        $Rechoice = Read-Host "`nMinden tiszta. Szeretnel valamit VISSZATELEPITENI / HELYREALLITANI? (I/N)"
+        $Rechoice = Read-Host "`nMinden tiszta. Szeretnel valamit VISSZATELEPITENI? (I/N)"
         if ($Rechoice -eq "I" -or $Rechoice -eq "i") {
-            Write-Log "Szervizes a helyreallitasi menut valasztotta. ReInstall.ps1 meghivasa..."
+            Write-Log "Szervizes a helyreallitast valasztotta. ReInstall.ps1 inditasa..."
             . [System.IO.Path]::Combine($TargetDir, "Scripts", "ReInstall.ps1")
         }
     }
