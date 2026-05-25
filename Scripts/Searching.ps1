@@ -2,7 +2,7 @@
 # Aktuális Fájl: Searching.ps1
 # Bloatware Killer - Kereső és kiértékelő modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.4
+# Verzió v0.1.5
 #
 
 Write-Log "Kereso modul elinditva..."
