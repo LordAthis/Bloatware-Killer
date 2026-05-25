@@ -2,7 +2,7 @@
 # Aktuális Fájl: Killer.ps1
 # Bloatware Killer - Végrehajtó / Eltávolító modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.15
+# Verzió v0.1.16
 #
 
 Function Write-Log {
@@ -12,7 +12,8 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Killer modul v0.1.15 elinditva."
+# Explicit módon naplózzuk a fájl saját verzióját
+Write-Log "Killer modul v0.1.16 elinditva."
 Write-Host "-> Ellenorzott hattertakaritas megkezdodott..." -ForegroundColor Cyan
 
 # --- 1. HP SPECIFIKUS ELLENŐRZÖTT ÉS CÉLZOTT TÖRLESEK ---
@@ -22,7 +23,6 @@ foreach ($App in $ToKill) {
     if ($App.Name -eq "HP Documentation") {
         $DocCmd = "C:\Program Files\HP\Documentation\Doc_uninstall.cmd"
         
-        # ELLENŐRZÉS: Létezik a gyári uninstaller script?
         if (Test-Path $DocCmd) {
             Write-Log "HP Documentation: Gyari CMD script detektalva. Inditas..."
             try {
@@ -32,7 +32,6 @@ foreach ($App in $ToKill) {
             } catch { Write-Log "HP Documentation: Hiba a CMD futtatasa kozben!" "WARN" }
         }
 
-        # ELLENŐRZÉS: Ott vannak még a Registry bejegyzések?
         $RegDoc1 = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\HP Documentation"
         $RegDoc2 = "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\HP Documentation"
         
@@ -50,7 +49,6 @@ foreach ($App in $ToKill) {
     if ($App.Name -eq "HP Connection Optimizer") {
         Write-Log "HP Connection Optimizer: Ellenorzott eltavolitas inditasa..."
         
-        # ELLENŐRZÉS: Fut vagy létezik a háttérszolgáltatás?
         $ServiceCheck = Get-Service -Name "HPConnectionOptimizerService" -ErrorAction SilentlyContinue
         if ($ServiceCheck) {
             Write-Log "HP Connection Optimizer: Szolgaltatas detektalva. Leallitas es torles..."
@@ -58,7 +56,6 @@ foreach ($App in $ToKill) {
             sc.exe delete "HPConnectionOptimizerService" | Out-Null
         }
         
-        # ELLENŐRZÉS: Telepítve van még a szoftver a WMI szerint?
         $WmicCheck = Get-CimInstance -Namespace root\cimv2 -ClassName Win32_Product -Filter "Name = 'HP Connection Optimizer'" -ErrorAction SilentlyContinue
         if ($WmicCheck) {
             Write-Log "HP Connection Optimizer: WMI termek detektalva. WMIC uninstall inditasa..."
@@ -69,7 +66,6 @@ foreach ($App in $ToKill) {
             } catch { Write-Log "HP Connection Optimizer: WMIC hiba!" "WARN" }
         }
 
-        # ELLENŐRZÉS: Ott vannak még a GUID alapú Registry kulcsok?
         $RegOpt1 = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{6468C4A5-E47E-405F-B675-A70A70983EA6}"
         $RegOpt2 = "HKLM:\SOFTWARE\Wow6432Node\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{6468C4A5-E47E-405F-B675-A70A70983EA6}"
         
@@ -82,7 +78,6 @@ foreach ($App in $ToKill) {
             Remove-Item -Path $RegOpt2 -Force -Recurse -ErrorAction SilentlyContinue 
         }
         
-        # ELLENŐRZÉS: Van egyéb név alapú maradvány kulcs?
         $LegacyKeys = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" -Recurse -ErrorAction SilentlyContinue | 
                       Where-Object { $_.GetValue("DisplayName") -like "*HP Connection Optimizer*" }
         if ($LegacyKeys) {
@@ -90,7 +85,6 @@ foreach ($App in $ToKill) {
             $LegacyKeys | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
         }
 
-        # ELLENŐRZÉS: Ott vannak a fizikai könyvtárak a lemezen?
         $PathsToDelete = @(
             "C:\Program Files (x86)\HP\HP Connection Optimizer",
             "C:\Program Files\HP\HP Connection Optimizer",
@@ -112,7 +106,6 @@ $CurrentInstalledItems = Get-ItemProperty $UninstallPaths -ErrorAction SilentlyC
 foreach ($App in $ToKill) {
     if ($App.Name -eq "HP Documentation" -or $App.Name -eq "HP Connection Optimizer") { continue }
 
-    # ELLENŐRZÉS: Ténylegesen szerepel a szoftver a telepítési listában?
     $Match = $CurrentInstalledItems | Where-Object { $_.DisplayName -like "*$($App.Name)*" -or $_.DisplayName -like "*$($App.RegistryName)*" }
     if ($Match) {
         foreach ($Item in $Match) {
@@ -143,7 +136,6 @@ foreach ($App in $ToKill) {
         }
     }
 
-    # ELLENŐRZÉS ÉS REGISTRY BLOKKOLÁS (IFEO TILTÁS)
     if ($App.RegistryBlock) {
         $IfeoPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\$($App.RegistryName).exe"
         if (-not (Test-Path $IfeoPath)) { 
@@ -193,7 +185,13 @@ foreach ($App in $ToKill) {
     }
 }
 
-# Ha bármilyen váratlan szintaktikai vagy futási hiba csúszna be, azt naplózzuk
 if ($Error.Count -gt 0) {
     foreach ($Err in $Error) {
         if ($Err.Exception -and $Err.InvocationInfo) {
+            Write-Log "Rendszer Hiba: $($Err.Exception.Message) | Sor: $($Err.InvocationInfo.ScriptLineNumber)" "ERROR"
+        }
+    }
+}
+
+Write-Host "--------------------------------------------------"
+Write-Log "Takaritasi statisztika -> Siker: $SuccessCount, Hiba: $FailCount"
