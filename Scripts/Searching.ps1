@@ -2,7 +2,7 @@
 # Aktuális Fájl: Searching.ps1
 # Bloatware Killer - Kereső és kiértékelő modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.16
+# Verzió v0.1.17
 #
 
 Function Write-Log {
@@ -19,6 +19,10 @@ $VendorFolder = ""
 if ($ComputerVendor -like "*HP*" -or $ComputerVendor -like "*Hewlett-Packard*") { $VendorFolder = "Hp" }
 elseif ($ComputerVendor -like "*Dell*") { $VendorFolder = "Dell" }
 elseif ($ComputerVendor -like "*Lenovo*") { $VendorFolder = "Lenovo" }
+elseif ($ComputerVendor -like "*ASUS*" -or $ComputerVendor -like "*ASUSTeK*") { $VendorFolder = "Asus" }
+elseif ($ComputerVendor -like "*MSI*" -or $ComputerVendor -like "*Micro-Star*") { $VendorFolder = "Msi" }
+elseif ($ComputerVendor -like "*Gigabyte*") { $VendorFolder = "Gigabyte" }
+elseif ($ComputerVendor -like "*Acer*") { $VendorFolder = "Acer" }
 
 if (-not $VendorFolder) {
     Write-Log "Nem tamogatott gyarto: $ComputerVendor" "WARN"
