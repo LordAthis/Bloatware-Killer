@@ -2,7 +2,7 @@
 # Aktuális Fájl: Killer.ps1
 # Bloatware Killer - Végrehajtó / Eltávolító modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.12
+# Verzió v0.1.13
 #
 
 Function Write-Log {
@@ -12,32 +12,65 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Killer modul v0.1.12 elinditva."
+Write-Log "Killer modul v0.1.13 elinditva."
 Write-Host "-> Erőszakos háttértakarítás megkezdődött..." -ForegroundColor Cyan
 
-# --- 1. HP SPECIFIKUS CÉLZOTT TÖRLESEK (ÁTUGORVA A GYÁRI HIBÁS STRINGEKET) ---
+# --- 1. HP SPECIFIKUS "NUKLEÁRIS" TÖRLÉSEK ---
 foreach ($App in $ToKill) {
+    
+    # HP Documentation (Ez már bizonyítottan működik, de benne hagyjuk)
     if ($App.Name -eq "HP Documentation") {
         $DocCmd = "C:\Program Files\HP\Documentation\Doc_uninstall.cmd"
         if (Test-Path $DocCmd) {
             Write-Log "HP Documentation torlese a gyari CMD scripttel..."
-            $Proc = Start-Process -FilePath $DocCmd -ArgumentList "/s" -WindowStyle Hidden -PassThru
-            $Proc.WaitForExit()
+            try {
+                $Proc = Start-Process -FilePath $DocCmd -ArgumentList "/s" -WindowStyle Hidden -PassThru
+                $Proc.WaitForExit()
+            } catch { Write-Log "CMD Hiba: HP Documentation" "WARN" }
         }
-        # Ha a CMD ott hagyná a registry-t, manuálisan is kisöpörjük
-        Remove-Item -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\HP Documentation" -Force -ErrorAction SilentlyContinue
-        Remove-Item -Path "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\HP Documentation" -Force -ErrorAction SilentlyContinue
+        # Registry takarítás biztos, ami biztos
+        Remove-Item -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\HP Documentation" -Force -Recurse -ErrorAction SilentlyContinue
+        Remove-Item -Path "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\HP Documentation" -Force -Recurse -ErrorAction SilentlyContinue
     }
 
+    # HP Connection Optimizer - A PROBLÉMÁS ELEM
     if ($App.Name -eq "HP Connection Optimizer") {
-        Write-Log "HP Connection Optimizer erőszakos leállítása és eltávolítása..."
-        # Leállítjuk a szolgáltatását direkt parancssorból
+        Write-Log "HP Connection Optimizer: Többlépcsős, erőszakos eltávolítás indítása..."
+        
+        # Lépés 1: Szolgáltatás likvidálása
+        Write-Host " [1/4] Szolgáltatás leállítása..." -ForegroundColor Yellow
         sc.exe stop "HPConnectionOptimizerService" | Out-Null
         sc.exe delete "HPConnectionOptimizerService" | Out-Null
         
-        # InstallShield csendesített kényszerítése GUID alapján
-        $Proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/X{6468C4A5-E47E-405F-B675-A70A70983EA6} /qn /norestart" -PassThru -ErrorAction SilentlyContinue
-        if ($Proc) { $Proc.WaitForExit() }
+        # Lépés 2: WMIC alapú eltávolítás (Ez néha okosabb, mint az msiexec)
+        Write-Host " [2/4] WMIC uninstall kísérlet..." -ForegroundColor Yellow
+        try {
+            $WmicProc = Start-Process -FilePath "wmic.exe" -ArgumentList "product where ""name like 'HP Connection Optimizer'"" call uninstall /nointeractive" -PassThru -WindowStyle Hidden
+            $WmicProc.WaitForExit()
+        } catch { Write-Log "WMIC hiba, lépés tovább..." "WARN" }
+
+        # Lépés 3: Registry kulcs "kitépése" (Hogy ne látszódjon telepítettnek)
+        Write-Host " [3/4] Registry kulcsok kényszerített törlése..." -ForegroundColor Yellow
+        # GUID alapú kulcs
+        Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{6468C4A5-E47E-405F-B675-A70A70983EA6}" -Force -Recurse -ErrorAction SilentlyContinue
+        Remove-Item -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{6468C4A5-E47E-405F-B675-A70A70983EA6}" -Force -Recurse -ErrorAction SilentlyContinue
+        # Név alapú keresés és törlés (ha más GUID-on lenne)
+        Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.GetValue("DisplayName") -like "*HP Connection Optimizer*" } | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+
+        # Lépés 4: Fizikai fájlok törlése a lemezről
+        Write-Host " [4/4] Programkönyvtárak törlése..." -ForegroundColor Yellow
+        $PathsToDelete = @(
+            "C:\Program Files (x86)\HP\HP Connection Optimizer",
+            "C:\Program Files\HP\HP Connection Optimizer",
+            "C:\ProgramData\HP\HP Connection Optimizer"
+        )
+        foreach ($P in $PathsToDelete) {
+            if (Test-Path $P) {
+                Remove-Item -Path $P -Force -Recurse -ErrorAction SilentlyContinue
+                Write-Log "Mappa törölve: $P"
+            }
+        }
+        Write-Log "HP Connection Optimizer tisztítás kész."
     }
 }
 
@@ -45,7 +78,7 @@ foreach ($App in $ToKill) {
 $CurrentInstalledItems = Get-ItemProperty $UninstallPaths -ErrorAction SilentlyContinue
 
 foreach ($App in $ToKill) {
-    # Ha a fentiek már elintézték, ezt az általános kört átugorjuk
+    # A HP specifikusokat már elintéztük fent, átugorjuk őket
     if ($App.Name -eq "HP Documentation" -or $App.Name -eq "HP Connection Optimizer") { continue }
 
     $Match = $CurrentInstalledItems | Where-Object { $_.DisplayName -like "*$($App.Name)*" -or $_.DisplayName -like "*$($App.RegistryName)*" }
@@ -62,6 +95,7 @@ foreach ($App in $ToKill) {
                         $Proc.WaitForExit()
                     } catch { Write-Log "MSI Hiba: $($App.Name)" "WARN" }
                 } else {
+                    # EXE kezelés
                     $CleanUnstring = $Unstring -replace '"', ''
                     if ($CleanUnstring -like "*.exe*") {
                         $ExePath = $CleanUnstring.Substring(0, $CleanUnstring.IndexOf(".exe") + 4)
@@ -75,7 +109,7 @@ foreach ($App in $ToKill) {
         }
     }
 
-    # IFEO tiltás (hogy ha a Windows Update visszatolná, se tudjon elindulni)
+    # IFEO tiltás
     if ($App.RegistryBlock) {
         $IfeoPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\$($App.RegistryName).exe"
         if (-not (Test-Path $IfeoPath)) { New-Item -Path $IfeoPath -Force | Out-Null }
@@ -83,8 +117,19 @@ foreach ($App in $ToKill) {
     }
 }
 
-# --- 3. VALÓDI REGISTRY ELLENŐRZÉS ÉS SUMMARY ---
-Write-Log "Kényszerített várakozás a Registry frissülésére..."
+$GarbagePaths = @(
+    "C:\ProgramData\HP\TCO", "C:\Online Services", "C:\Users\Public\Desktop\TCO Certified.lnk",
+    "C:\ProgramFiles\Dell\DigitalDelivery", "C:\ProgramData\Dell\SARemediation"
+)
+foreach ($Path in $GarbagePaths) {
+    if (Test-Path $Path) {
+        Remove-Item -Path $Path -Force -Recurse -ErrorAction SilentlyContinue
+        Write-Log "Szemet mappa pucolva: $Path"
+    }
+}
+
+# --- VÁRAKOZÁS ÉS ELLENŐRZÉS ---
+Write-Log "Varakozas a registry frissulesere..."
 [System.Threading.Thread]::Sleep(3000)
 
 Clear-Host
@@ -94,19 +139,18 @@ Write-Host "==================================================" -ForegroundColor
 
 $SuccessCount = 0
 $FailCount = 0
-# Újra lekérjük a nyers listát a lemezről ellenőrzésre!
 $FinalCheck = Get-ItemProperty $UninstallPaths -ErrorAction SilentlyContinue
 
 foreach ($App in $ToKill) {
     $CheckInstalled = $FinalCheck | Where-Object { $_.DisplayName -like "*$($App.Name)*" -or $_.DisplayName -like "*$($App.RegistryName)*" }
     
     if (-not $CheckInstalled) {
-        Write-Host " [SIKERES]   $($App.Name) eltavolitva a gépből." -ForegroundColor Green
-        Write-Log "Valoban sikeresen eltavolitva: $($App.Name)"
+        Write-Host " [SIKERES]   $($App.Name) eltavolitva." -ForegroundColor Green
+        Write-Log "Sikeresen eltavolitva: $($App.Name)"
         $SuccessCount++
     } else {
         Write-Host " [SIKERTELEN] $($App.Name) meg mindig a registry-ben van!" -ForegroundColor Red
-        Write-Log "Sikertelen erőszakos eltávolítás: $($App.Name)" "WARN"
+        Write-Log "Még mindig detektálható: $($App.Name)" "WARN"
         $FailCount++
     }
 }
