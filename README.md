@@ -4,16 +4,16 @@ Mindenféle a rendszerbe települő kéretlen reklám és gyártói felesleges p
 
 # RTS - Bloatware Killer (v0.1.17)
 
-Az RTS (Repair-Toning-Settings) okoszisztema modularis resze. Gyarto- es szegmensspecifikus elore telepitett szoftverek (bloatware), kretlen reklamprogramok es felesleges hatter-szolgalltatasok automatizalt felkutatasa, naplozasa, kezelese es torlese Windows 7, 10 es 11 rendszereken.
+A RTS (Repair-Toning-Settings) ökoszisztéma moduláris része. Gyártó- és szegmensspecifikus előre telepített szoftverek (bloatware), kéretlen reklámprogramok és felesleges háttér-szolgáltatások automatizált felkutatása, naplózása, kezelése és törlése Windows 7, 10 és 11 rendszereken.
 
-##  A Projekt Struktura
+## 📂 A Projekt Struktúrája
 
 ```text
 Bloatware-Killer/
 │
-├── Launcher.ps1          # Fő indító, jogosultság, tápellátás és verziókezelő
+├── Launcher.ps1          # Fő indító, jogosultság-, tápellátás- és verziókezelő
 ├── .gitignore            # Git szűrőfájl (LOG és ideiglenes fájlok kizárása)
-├── README.md             # Szerviz szintű szakmai dokumentáció
+├── README.md             # Szerviz szintű szakmai dokumentáció (ékezetes)
 │
 ├── Data/                 # Gyártói JSON adatbázisok (verziózva)
 │   ├── Acer/
@@ -30,48 +30,48 @@ Bloatware-Killer/
     └── ReInstall.ps1     # Helyreállító modul (IFEO tiltások feloldása)
 ```
 
-## ⚙️ Mukodesi Elv es Szerviz Logika
+## ⚙️ Működési Elv és Szerviz Logika
 
-A szkriptcsomag szigoruan koveti az **"Ellenorzes -> Naplozas -> Vegrehajtas (csak ha szukseges) -> Naplozas"** lancolatot, minimalizalva a felesleges lemezmuveleteket es elkerulve az al-hibauzenetek generalasat a rendszerben.
+A szkriptcsomag szigorúan követi az **"Ellenőrzés -> Naplózás -> Végrehajtás (csak ha szükséges) -> Naplózás"** láncolatot, minimalizálva a felesleges lemezműveleteket és elkerülve az ál-hibaüzenetek generálását a rendszerben.
 
-1. **Jogosultsag es Frissites:** A `Launcher.ps1` .NET alapon UAC jogot emel, majd ellenorzi a futtatott szkript verziojat a `C:\Windows\Scripts\Bloatware-Killer` mappaban talalhato verzioval szemben. Ha ujabb verzio van a pendrive-on, automatikusan lefrissiti a helyi tarolot, es a tiszta környezetből indul ujra.
-2. **Környezetvedelem:** Vizsgalja a hordozhato eszkozok tapellatasat (akkumulator csekkolas), es a futas idejere .NET API-n keresztul letiltja a Windows elalvasi/piheno modjat.
-3. **Konzekvens Naplozas:** Minden egyes modul (`Searching`, `Killer`, `ReInstall`) az indulasakor **explicit modon beirja a sajat aktualis verzioszamat** a kozponti, napi logfajlba.
-4. **Biztonsagos Kiertekeles:** A `Killer.ps1` a gyarto uninstaller folyamatainak inditasa utan .NET alapu `$Proc.WaitForExit()` hurokkal megvarja a fizikai torles veget, majd a summary kiirasa elott 3 masodperces kenyszeritett pihenot alkalmaz, igy a statisztika mindig a valos ideju registry-allapotot mutatja.
+1. **Jogosultság és Frissítés:** A `Launcher.ps1` .NET alapon UAC jogot emel, majd ellenőrzi a futtatott szkript verzióját a `C:\Windows\Scripts\Bloatware-Killer` mappában található verzióval szemben. Ha újabb verzió van a pendrive-on, automatikusan lefrissíti a helyi tárolót, és a tiszta környezetből indul újra.
+2. **Környezetvédelem:** Vizsgálja a hordozható eszközök tápellátását (akkumulátor csekkolás), és a futás idejére .NET API-n keresztül letiltja a Windows elalvási/pihenő módját.
+3. **Konzekvens Naplózás:** Minden egyes modul (`Searching`, `Killer`, `ReInstall`) az indulásakor **explicit módon beírja a saját aktuális verziószámát** a központi, napi logfájlba.
+4. **Biztonságos Kiértékelés:** A `Killer.ps1` a gyártói uninstaller folyamatok indítása után .NET alapú `$Proc.WaitForExit()` hurokkal megvárja a fizikai törlés végét, majd a summary kiírása előtt 3 másodperces kényszerített pihenőt alkalmaz, így a statisztika mindig a valós idejű registry-állapotot mutatja.
 
-##  Szakmai Indoklas es Gyartoi Tapasztalatok (Reddit r/sysadmin alapjan)
+## 🛠️ Szakmai Indoklás és Gyártói Tapasztalatok (Reddit r/sysadmin alapján)
 
-A gyartok komoly penzeket kapnak az elore telepitett szoftverek elhelyezeseert. Szervizeles es karbantartas soran ezek eltavolitasa kritikus a rendszer stabilitasa es sebessege erdekeben.
+A gyártók komoly pénzeket kapnak az előre telepített szoftverek elhelyezéséért. Szervizelés és karbantartás során ezek eltávolítása kritikus a rendszer stabilitása és sebessége érdekében.
 
 ### 💻 Laptop Szegmens
 
 * **HP (Hewlett-Packard):**
-  * *HP Support Assistant / HP Insights:* Folyamatosan futnak a hatterben, feleslegesen eszik a CPU-t es a memoriat, mikozben instabil driver-frissitesekkel kekhalalt okozhatnak.
-  * *HP Connection Optimizer:* Hires a halozati telemetria kuldeserol es a rejtelyes Wi-Fi/Ethernet szakadasok generalasarol.
-  * *HP JumpStart Bridge:* Az elso inditaskor megjeleno kretlen Dropbox/Adobe felugro reklamok fokezeloje.
-  * *HP Documentation:* Offline PDF-ek es haszontalan utmutatok, amik csak a helyet foglaljak.
+  * *HP Support Assistant / HP Insights:* Folyamatosan futnak a háttérben, feleslegesen eszik a CPU-t és a memóriát, miközben instabil driver-frissítésekkel kék halált okozhatnak.
+  * *HP Connection Optimizer:* Híres a hálózati telemetria küldéséről és a rejtélyes Wi-Fi/Ethernet szakadások generálásáról.
+  * *HP JumpStart Bridge:* Az első indításkor megjelenő kéretlen Dropbox/Adobe felugró reklámok főkezelője.
+  * *HP Documentation:* Offline PDF-ek és haszontalan útmutatók, amik csak a helyet foglalják.
 * **DELL:**
-  * *Dell SupportAssist & Remediation:* Kozismerten sulyos hatter-terhelest generalnak. A Remediation modul gyakran okoz rendszerinditasi hurokhibakat (Boot Loop).
-  * *SmartByte Network Service:* Az egyik legkarosabb szoftver. A halozati forgalom priorizalasanak alcazva kepes az internetkapcsolat savszelesseget akar 50-70%-kal is lefojtani.
+  * *Dell SupportAssist & Remediation:* Közismerten súlyos háttér-terhelést generálnak. A Remediation modul gyakran okoz rendszerindítási hurokhibákat (Boot Loop).
+  * *SmartByte Network Service:* Az egyik legkárosabb szoftver. A hálózati forgalom priorizálásának álcázva képes az internetkapcsolat sávszélességét akár 50-70%-kal is lefojtani.
 * **LENOVO:**
-  * *Lenovo Vantage Service:* A lakossagi verzio tele van akciokkal, reklamokkal es felhos targyhely-ajanlatokkal.
-  * *System Interface Foundation (ImController):* Regebben tobb sulyos biztonsagi rest (privilege escalation) is felfedeztek benne a kutatok, felesleges hatter-bejlentkezo szoftver.
+  * *Lenovo Vantage Service:* A lakossági verzió tele van akciókkal, reklámokkal és felhős tárhely-ajánlatokkal.
+  * *System Interface Foundation (ImController):* Régebben több súlyos biztonsági rést (privilege escalation) is felfedeztek benne a kutatók, felesleges háttér-bejelentkező szoftver.
 * **ACER:**
-  * *Acer Care Center:* Tisztitonak alcazott bloatware, ami folyamatosan monitorozza a hattertarat, felesleges i/o muveleteket es lassulast generalva.
+  * *Acer Care Center:* Tisztítónak álcázott bloatware, ami folyamatosan monitorozza a háttértárat, felesleges I/O műveleteket és lassulást generálva.
 
-### 🖥️ Asztali (PC) es Alaplapi Szegmens
+### 🖥️ Asztali (PC) és Alaplapi Szegmens
 
-Az egyedi epitesu vagy markas asztali szamitogepeknel (MSI, Gigabyte, ASUS alaplapok) talalhatok a legagresszivebb karterto szoftvercsomagok. Ezeket a rendszergazdak az elso helyen torlik, mert instabilitast, felesleges CPU-tuskeget es kekhalalt okoznak.
+An egyedi építésű vagy márkás asztali számítógépeknél (MSI, Gigabyte, ASUS alaplapok) találhatók a legagresszívebb kártevő szoftvercsomagok. Ezeket a rendszergazdák az első helyen törlik, mert instabilitást, felesleges CPU-tüskéket és kék halált okoznak.
 
 * **MSI Desktop Szegmens:**
-  * *MSI Center:* Sulyos hatterbeli telemetria, rendkivul instabil RGB- es hardvervezerlo szoftver, ami feleslegesen fut az automatikus inditasban.
-  * *MSI Driver Utility Installer:* Minden tiszta Windows telepites es inditas utan eroszakosan felugro ablak, ami megprobalja atvenni a Windows Update szerepet, felesleges vagy elavult szoftvereket eroltetve a felhasznalora. Az r/sysadmin es r/MSI_Gaming kozossegek egyontetű velemenye alapjan azonnal eltavolitando.
+  * *MSI Center:* Súlyos háttérbeli telemetria, rendkívül instabil RGB- és hardvervezérlő szoftver, ami feleslegesen fut az automatikus indításban.
+  * *MSI Driver Utility Installer:* Minden tiszta Windows telepítés és indítás után erőszakosan felugró ablak, ami megpróbálja átvenni a Windows Update szerepét, felesleges vagy elavult szoftvereket erőltetve a felhasználóra. Az r/sysadmin és r/MSI_Gaming közösségek egyöntetű véleménye alapján azonnal eltávolítandó.
 * **GIGABYTE Desktop Szegmens:**
-  * *GIGABYTE Control Center (GCC) & APP Center:* A Gigabyte asztali alaplapjai a BIOS-bol (WPBT tablan keresztul) injektaljak be ezeket a programokat az operacios rendszerbe a felhasznalo tudta nelkul. Ezek sokszor hibas, elavult drivereket eroltetnek a gepre, sulyos CPU-terhelest es mikro-szaggatasokat okozva a jatekok vagy professzionalis munkak alatt.
+  * *GIGABYTE Control Center (GCC) & APP Center:* A Gigabyte asztali alaplapjai a BIOS-ból (WPBT táblán keresztül) injektálják be ezeket a programokat az operációs rendszerbe a felhasználó tudta nélkül. Ezek sokszor hibás, elavult drivereket erőltetnek a gépre, súlyos CPU-terhelést és mikro-szaggatásokat okozva a játékok vagy professzionális munkák alatt.
 * **ASUS Desktop Szegmens:**
-  * *Armoury Crate:* Az egyik legrosszabbul optimalizalt hardverkezelo szoftver a piacon. Telepiteskor tobb tucat kulonallo, egymast fojgato hatterfolyamatra es szolgalltatasra torezedik szet, jelentosen megemelve a rendszer alapjarati fogyasztasat es keslelteteset (DPC Latency).
+  * *Armoury Crate:* Az egyik legrosszabbul optimalizált hardverkezelő szoftver a piacon. Telepítéskor több tucat különálló, egymást fojtogató háttérfolyamatra és szolgáltatásra töredezik szét, jelentősen megemelve a rendszer alapjárati fogyasztását és késleltetését (DPC Latency).
 
-## 🛡️ IFEO Ujratelepites Elleni Vedelem
+## 🛡️ IFEO Újratelepítés Elleni Védelem
 
-Mivel a Windows Update vagy a gyartoi BIOS-injekciok hajlamosak a szoftvereket a hatterben automatikusan visszatelepiteni, a szkript **IFEO (Image File Execution Options)** registry-alapu futasgatlast alkalmaz a kritikus elemekre. A programok `.exe` fajljaihoz tarsitott `Debugger` kulcsot atiranyitja egy azonnal kilepo folyamatra (`cmd.exe /c exit`), igy a bloatware-ek abban az esetben sem kepesek tobbe elindulni vagy hatterfolyamatot inditani, ha valami kesobb visszamasolna oket a lemezre.
+Mivel a Windows Update vagy a gyári BIOS-injekciók hajlamosak a szoftvereket a háttérben automatikusan visszatelepíteni, a szkript **IFEO (Image File Execution Options)** registry-alapú futásgátlást alkalmaz a kritikus elemekre. A programok `.exe` fájljaihoz társított `Debugger` kulcsot átirányítja egy azonnal kilépő folyamatra (`cmd.exe /c exit`), így a bloatware-ek abban az esetben sem képesek többé elindulni vagy háttérfolyamatot indítani, ha valami később visszamásolná őket a lemezre.
 
