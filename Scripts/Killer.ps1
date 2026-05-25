@@ -114,3 +114,44 @@ foreach ($Path in $GarbagePaths) {
 }
 
 Write-Host "`nA takaritas sikeresen befejezodott! Ellenorizd a logfajlt." -ForegroundColor Green
+
+
+# --- EREDMÉNYEK KIÉRTÉKELÉSE ÉS KIÍRÁSA ---
+Clear-Host
+Write-Host "==================================================" -ForegroundColor Cyan
+Write-Host "          TAKARITAS VEGEREDMENYE (SUMMARY)         " -ForegroundColor Cyan
+Write-Host "==================================================" -ForegroundColor Cyan
+
+$SuccessCount = 0
+$FailCount = 0
+
+foreach ($App in $ToKill) {
+    # .NET-tel ellenőrizzük, hogy a szoftver még mindig szerepel-e a registry uninstall listában
+    $CheckInstalled = Get-ItemProperty $UninstallPaths -ErrorAction SilentlyContinue | 
+                      Where-Object { $_.DisplayName -like "*$($App.Name)*" -or $_.DisplayName -like "*$($App.RegistryName)*" }
+    
+    if (-not $CheckInstalled) {
+        Write-Host " [SIKERES]  $($App.Name) eltávolítva." -ForegroundColor Green
+        Write-Log "Sikeresen eltavolitva: $($App.Name)"
+        $SuccessCount++
+    } else {
+        Write-Host " [SIKERTELEN] $($App.Name) eltávolítása nem sikerült." -ForegroundColor Red
+        Write-Log "Sikertelen eltavolitas: $($App.Name)" "WARN"
+        $FailCount++
+    }
+}
+
+Write-Host "--------------------------------------------------"
+Write-Host "Sikeresen tisztitott elemek szama: $SuccessCount" -ForegroundColor Green
+if ($FailCount -gt 0) {
+    Write-Host "Hibat jelento / megmaradt elemek szama: $FailCount" -ForegroundColor Red
+}
+
+Write-Host "`nA részletes naplót itt találod: $LogFile" -ForegroundColor Gray
+Write-Log "Takaritasi statisztika: Siker: $SuccessCount, Hiba: $FailCount"
+
+# --- A KRITIKUS MEGÁLLÍTÁS: VÁRAKOZÁS A SZERVIZESRE ---
+Write-Host "`nNyomj meg egy gombot a bezáráshoz és a kilépéshez..." -ForegroundColor Cyan
+Write-Log "Szkript megallitva, varakozas a szervizes gombnyomasara..."
+
+[System.Console]::ReadKey($true) | Out-Null
