@@ -1,0 +1,42 @@
+[
+  {
+    "Name": "Lenovo Vantage Service",
+    "RegistryName": "VantageService",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": false,
+    "Comment": "A lakossagi Vantage hatter-szolgaltatasa, tele van reklamokkal es akciokkal."
+  },
+  {
+    "Name": "Lenovo Now",
+    "RegistryName": "LenovoNow",
+    "MinWinVersion": "11",
+    "Action": "Remove",
+    "RegistryBlock": false,
+    "Comment": "Uj gepeknel felugro ablakokban promociokat es felhos targyhelyet hirdet."
+  },
+  {
+    "Name": "Lenovo System Interface Foundation",
+    "RegistryName": "ImController",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Lenovo egyedi plug-in kezeloje, korabban tobb sulyos biztonsagi rese is volt."
+  },
+  {
+    "Name": "Lenovo Smart Appearance",
+    "RegistryName": "SmartAppearance",
+    "MinWinVersion": "11",
+    "Action": "Remove",
+    "RegistryBlock": false,
+    "Comment": "AI alapu kameramanipulalo extra, ami feleslegesen terheli a hardvert."
+  },
+  {
+    "Name": "Lenovo Welcome",
+    "RegistryName": "LenovoWelcome",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Elso inditaskor megjeleno, kesobb teljesen haszontalanna valo udvozlo szoftver."
+  }
+]
