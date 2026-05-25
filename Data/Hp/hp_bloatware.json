@@ -5,7 +5,7 @@
     "MinWinVersion": "10",
     "Action": "Remove",
     "RegistryBlock": true,
-    "Comment": "Lassítja a rendszert, feleslegesen fut a háttérben."
+    "Comment": "Folyamatosan fut a hatterben, feleslegesen frissit drivereket."
   },
   {
     "Name": "HP System Event Utility",
@@ -13,14 +13,54 @@
     "MinWinVersion": "7",
     "Action": "Keep",
     "RegistryBlock": false,
-    "Comment": "Funkciógombokért felelős, megtartandó, de indítása tiltható."
+    "Comment": "Funkciogombokert felel, megtartando, de inditasa tilthato."
   },
   {
     "Name": "HP JumpStart Bridge",
-    "RegistryName": "HP.JumpStart",
+    "RegistryName": "HPJumpstart",
     "MinWinVersion": "10",
     "Action": "Remove",
     "RegistryBlock": true,
-    "Comment": "A képernyőn látható Dropbox/Adobe reklámokért felelős."
+    "Comment": "A kepernyon lathato Dropbox/Adobe reklamokert felelos."
+  },
+  {
+    "Name": "HP Wolf Security",
+    "RegistryName": "HP Wolf Security",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Lassitja a rendszert, osszeakad mas virusirtokkal."
+  },
+  {
+    "Name": "HP Connection Optimizer",
+    "RegistryName": "HP Connection Optimizer",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Telemetriat kuld, halozati hibakat okozhat."
+  },
+  {
+    "Name": "HP Insights",
+    "RegistryName": "HP Insights",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Kretlen hatterbeli adatgyujto es telemetria szoftver."
+  },
+  {
+    "Name": "HP Documentation",
+    "RegistryName": "HP Documentation",
+    "MinWinVersion": "7",
+    "Action": "Remove",
+    "RegistryBlock": false,
+    "Comment": "Felesleges offline PDF-ek es utmutatok foglaljak a helyet."
+  },
+  {
+    "Name": "HP Smart",
+    "RegistryName": "HPSmart",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": false,
+    "Comment": "Csak akkor kell ha van HP nyomtato. Windows Store automatikusan visszateszi, ha nincs letiltva."
   }
 ]
