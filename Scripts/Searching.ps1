@@ -1,9 +1,9 @@
-#
+# 
 # Aktuális Fájl: Searching.ps1
 # Bloatware Killer - Kereső és kiértékelő modul
-# Verzió: 0.1.2
+# Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
+# Verzió v0.1.4
 #
-
 
 Write-Log "Kereso modul elinditva..."
 
@@ -55,7 +55,7 @@ foreach ($App in $BloatwareDatabase) {
 
 Clear-Host
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "          BLOATWARE KILLER v0.1 - EREDMENYEK       " -ForegroundColor Cyan
+Write-Host "          BLOATWARE KILLER v0.1.4 - EREDMENYEK      " -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "Rendszer: Windows $OSVersion | Gyarto: $ComputerVendor"
 Write-Host "--------------------------------------------------"
@@ -63,13 +63,13 @@ Write-Host "--------------------------------------------------"
 if ($ToKill.Count -gt 0) {
     Write-Host "Eltavolitasra javasolt szoftverek:" -ForegroundColor Yellow
     foreach ($Item in $ToKill) {
-        # LightRed lecserelve Red-re a kompatibilitas miatt
         Write-Host " [-] $($Item.Name) (Magyarazat: $($Item.Comment))" -ForegroundColor Red
     }
     
     $Choice = Read-Host "`nSzeretned elinditani a takaritast? (I/N)"
     if ($Choice -eq "I" -or $Choice -eq "i") {
         Write-Log "Szervizes joovaahagyta a takaritast. Killer.ps1 meghivasa..."
+        # Direkt meghívás, hogy a Killer.ps1 lefutása után visszatérjen ide a vezérlés
         . [System.IO.Path]::Combine($TargetDir, "Scripts", "Killer.ps1")
     }
 } else {
