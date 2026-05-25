@@ -1,8 +1,8 @@
 # 
 # Aktuális Fájl: Launcher.ps1
 # Bloatware Killer Launcher - Az RTS ökoszisztéma része.
-# Gyártóspecificus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.4
+# Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
+# Verzió v0.1.5
 #
 
 # --- 1. JOGOSULTSÁG EMELÉS .NET ALAPON ---
@@ -19,16 +19,16 @@ if (-not $IsAdmin) {
     Exit
 }
 
-# --- KÖRNYEZETI VÁLTOZÓK ---
-$TargetDir = "C:\Windows\RTS-Scripts"
+# --- KÖRNYEZETI VÁLTOZÓK (JAVÍTVA A KÉRT REPO ÚTVONALRA) ---
+$TargetDir = "C:\Windows\Scripts\Bloatware-Killer"
 $TargetLauncher = [System.IO.Path]::Combine($TargetDir, "Launcher.ps1")
 $LogDir = [System.IO.Path]::Combine($TargetDir, "LOG")
 $TimeStamp = [System.DateTime]::Now.ToString("yyyyMMdd_HHmmss")
 $LogFile = [System.IO.Path]::Combine($LogDir, "BloatwareKiller_$TimeStamp.log")
 
-if (-not [System.IO.Directory]::Exists($LogDir)) {
-    [System.IO.Directory]::CreateDirectory($LogDir) | Out-Null
-}
+# Rendszermappák létrehozása .NET alapon
+if (-not [System.IO.Directory]::Exists($TargetDir)) { [System.IO.Directory]::CreateDirectory($TargetDir) | Out-Null }
+if (-not [System.IO.Directory]::Exists($LogDir)) { [System.IO.Directory]::CreateDirectory($LogDir) | Out-Null }
 
 Function Write-Log {
     Param([string]$Message, [string]$Type = "INFO")
@@ -37,9 +37,9 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Bloatware Killer v0.1.4 elinditva."
+Write-Log "Bloatware Killer v0.1.5 elinditva."
 
-# --- 2. VERZIÓELLENŐRZÉS ÉS TELEPÍTÉS/FRISSÍTÉS .NET SEGÍTSÉGÉVEL ---
+# --- 2. INTENSÍV VERZIÓELLENŐRZÉS ÉS FRISSÍTÉSI LOGIKÁK ---
 Function Get-ScriptVersion {
     Param([string]$FilePath)
     if (-not [System.IO.File]::Exists($FilePath)) { return "0.0.0" }
@@ -58,22 +58,36 @@ $InstalledVersionString = Get-ScriptVersion -FilePath $TargetLauncher
 $CurrentVersion = [System.Version]$CurrentVersionString
 $InstalledVersion = [System.Version]$InstalledVersionString
 
-Write-Log "Futasi verzio: $CurrentVersionString | Telepitett verzio: $InstalledVersionString"
+Write-Log "Futasi verzio: $CurrentVersionString | Telepitett korabbi verzio: $InstalledVersionString"
 
+# Ha külső helyről futunk, VAGY frissebb verziót hoztunk a gépre
 if ($PSScriptRoot -ne $TargetDir -or $CurrentVersion -gt $InstalledVersion) {
-    if ($CurrentVersion -gt $InstalledVersion) {
-        Write-Log "Ujabb verzio detektalva ($CurrentVersionString > $InstalledVersionString). Frissites..."
-    } else {
-        Write-Log "A script elszor fut errol a geprol. Telepites a rendszerszintu mappaba..."
+    try {
+        if ($CurrentVersion -gt $InstalledVersion) {
+            Write-Log "Ujabb verzio detektalva ($CurrentVersionString > $InstalledVersionString). Masolas..."
+        } else {
+            Write-Log "Elso telepites a megadott RTS mappaba ($TargetDir)..."
+        }
+
+        # Forrásfájlok átmásolása a központi mappába
+        Copy-Item -Path "$PSScriptRoot\*" -Destination $TargetDir -Recurse -Force
+        Write-Log "A masolas es a fajlok elhelyezese sikeresen megtortent."
+        
+    } catch {
+        Write-Log "HIBA a masolas kozben: $_" "ERROR"
+        Write-Host "[!] Hiba tortent a szinkronizalas soran. Ellenorizd a jogokat!" -ForegroundColor Red
     }
 
-    if (-not [System.IO.Directory]::Exists($TargetDir)) { 
-        [System.IO.Directory]::CreateDirectory($TargetDir) | Out-Null 
-    }
-    
-    Copy-Item -Path "$PSScriptRoot\*" -Destination $TargetDir -Recurse -Force
-    Write-Log "Szinkronizacio kesz. Ujrainditas az RTS kornyezetbol..."
-    
+    # Megnyitjuk a frissítési naplót ellenőrzésre, hogy a szervizes lássa mi történt
+    Write-Log "Frissitesi log automatikus megnyitasa ellenorzesre..."
+    [System.Diagnostics.Process]::Start("notepad.exe", $LogFile) | Out-Null
+
+    Write-Host "`n[FRISSÍTÉS] A szkriptek frissitve lettek a kozponti RTS mappaba!" -ForegroundColor Green
+    Write-Host "A frissitesi naplo megnyilt a hatterben." -ForegroundColor Gray
+    Write-Host "Nyomj meg egy gombot az uj verzio elinditasahoz..." -ForegroundColor Cyan
+    [System.Console]::ReadKey($true) | Out-Null
+
+    # Új verzió indítása a végleges helyéről
     $RtsProcess = New-Object System.Diagnostics.ProcessStartInfo
     $RtsProcess.FileName = "powershell.exe"
     $RtsProcess.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$TargetLauncher`""
@@ -88,6 +102,7 @@ try {
         Write-Log "Hordozhato eszkoz detektalva. Tapellatas ellenorzese..."
         if ($PowerStatus.PowerLineStatus -eq "Offline") {
             Write-Log "FIGYELMEZTETES: A gep akkumulatorrol uzemel! Csatlakoztasd a toltot!" "WARN"
+            Write-Host "[!] FIGYELMEZTETES: A gep akkumulatorrol uzemel!" -ForegroundColor Yellow
         } else {
             Write-Log "Tapkabel csatlakoztatva."
         }
@@ -119,13 +134,14 @@ $SearchingScript = [System.IO.Path]::Combine($TargetDir, "Scripts", "Searching.p
 if ([System.IO.File]::Exists($SearchingScript)) {
     . $SearchingScript
 } else {
-    Write-Log "Hiba: A Searching.ps1 nem talalhato!" "ERROR"
+    Write-Log "Hiba: A Searching.ps1 nem talalhato itt: $SearchingScript" "ERROR"
+    Write-Host "[!] Kritikus hiba: A Searching.ps1 hianyzik!" -ForegroundColor Red
 }
 
 # --- ALVÁS VISSZAÁLLÍTÁSA ---
 [uint32]$ResetFlags = 0x80000000
 $Win32Sleep::SetThreadExecutionState($ResetFlags) | Out-Null
-Write-Log "Bloatware Killer v0.1.4 futasa befejezodott."
+Write-Log "Bloatware Killer v0.1.5 futasa sikeresen befejezodott."
 
 # --- AZ ABLAK BEZÁRÁSÁNAK ABSZOLÚT MEGGÁTLÁSA ---
 Write-Host "`n[VEGZETT] A folyamat befejezodott." -ForegroundColor Green
