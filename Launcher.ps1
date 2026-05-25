@@ -24,7 +24,6 @@ $LogDir = [System.IO.Path]::Combine($TargetDir, "LOG")
 $TimeStamp = [System.DateTime]::Now.ToString("yyyyMMdd_HHmmss")
 $LogFile = [System.IO.Path]::Combine($LogDir, "BloatwareKiller_$TimeStamp.log")
 
-# Mappa létrehozása .NET-tel a stabilitásért
 if (-not [System.IO.Directory]::Exists($LogDir)) {
     [System.IO.Directory]::CreateDirectory($LogDir) | Out-Null
 }
@@ -53,15 +52,17 @@ try {
     Write-Log "Nem sikerult a .NET tapellatas-ellenorzes, atugras..." "WARN"
 }
 
-# --- 3. PIHENŐ MÓD (ALVÁS) MEGGÁTLÁSA .NET KÉREMMEL ---
+# --- 3. PIHENŐ MÓD MEGGÁTLÁSA (TÍPUSKONVERZIÓS HIBA JAVÍTVA) ---
 Write-Log "Alvo allapot letiltasa a script futasanak idejere..."
 $Signature = @'
 [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
 public static extern uint SetThreadExecutionState(uint esFlags);
 '@
 $Win32Sleep = Add-Type -MemberDefinition $Signature -Name "Win32Sleep" -Namespace "Win32" -PassThru
-# ES_CONTINUOUS (0x80000000) | ES_SYSTEM_REQUIRED (0x00000001)
-$Win32Sleep::SetThreadExecutionState(0x80000001) | Out-Null
+
+# Explicit [uint32] konverzió alkalmazása a túlcsordulás megelőzésére
+[uint32]$Flags = 0x80000001
+$Win32Sleep::SetThreadExecutionState($Flags) | Out-Null
 
 # --- 4. TELEPÍTÉS ELLENŐRZÉSE ÉS SZINKRONIZÁLÁS ---
 Write-Log "Telepitesi kornyezet ellenorzese itt: $TargetDir"
@@ -81,10 +82,8 @@ if ($PSScriptRoot -ne $TargetDir) {
 
 # --- 5. RENDSZER- ÉS GYÁRTÓ DETEKTÁLÁS ---
 $OSVersion = [System.Environment]::OSVersion.Version.Major
-# Windows 11 korrekció, mivel az OSVersion 10-et ad vissza mindkettőre
 if ($OSVersion -eq 10 -and [System.Environment]::OSVersion.Version.Build -ge 22000) { $OSVersion = 11 }
 
-# Gyártó lekérése .NET CIM/WMI hívással (Gyorsabb, mint a Get-WmiObject)
 $ComputerVendor = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
 Write-Log "Rendszer: Windows $OSVersion | Gyarto: $ComputerVendor"
 
@@ -98,5 +97,6 @@ if ([System.IO.File]::Exists($SearchingScript)) {
 }
 
 # --- ALVÁS VISSZAÁLLÍTÁSA ---
-$Win32Sleep::SetThreadExecutionState(0x80000000) | Out-Null
+[uint32]$ResetFlags = 0x80000000
+$Win32Sleep::SetThreadExecutionState($ResetFlags) | Out-Null
 Write-Log "Bloatware Killer v0.1 futasa befejezodott."
