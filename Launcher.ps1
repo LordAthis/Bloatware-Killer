@@ -2,7 +2,7 @@
 # Aktuális Fájl: Launcher.ps1
 # Bloatware Killer Launcher - Az RTS ökoszisztéma része.
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.8
+# Verzió v0.1.9
 #
 
 # --- 1. JOGOSULTSÁG EMELÉS .NET ALAPON ---
@@ -22,7 +22,6 @@ $TargetDir = "C:\Windows\Scripts\Bloatware-Killer"
 $TargetLauncher = [System.IO.Path]::Combine($TargetDir, "Launcher.ps1")
 $LogDir = [System.IO.Path]::Combine($TargetDir, "LOG")
 
-# Fix napi logfájl név, hogy az újraindított folyamat is UGYANEBBEN folytassa a munkát!
 $DailyStamp = [System.DateTime]::Now.ToString("yyyyMMdd")
 $LogFile = [System.IO.Path]::Combine($LogDir, "BloatwareKiller_$DailyStamp.log")
 
@@ -39,16 +38,14 @@ Function Write-Log {
 }
 
 Write-Log "--------------------------------------------------"
-Write-Log "Launcher v0.1.7 elinditva."
+Write-Log "Launcher v0.1.9 elinditva."
 
 if ([System.IO.Directory]::Exists($OldWrongDir)) {
     try {
         Write-Log "Regi, hibas mappa detektalva ($OldWrongDir). Automatikus torles..."
         Remove-Item -Path $OldWrongDir -Force -Recurse -ErrorAction SilentlyContinue
         Write-Log "A regi mappa sikeresen felszamolva."
-    } catch {
-        Write-Log "Nem sikerult a regi mappa torlese: $_" "WARN"
-    }
+    } catch { Write-Log "Nem sikerult a regi mappa torlese: $_" "WARN" }
 }
 
 # --- 2. VERZIÓELLENŐRZÉS ÉS BIZTONSÁGOS FRISSÍTÉS ---
@@ -57,7 +54,7 @@ Function Get-ScriptVersion {
     if (-not [System.IO.File]::Exists($FilePath)) { return "0.0.0" }
     $Header = Get-Content -Path $FilePath -TotalCount 10
     foreach ($Line in $Header) {
-        if ($Line -match "Verzió\s+v?(\d+\.\d+\.\d+)") { return $Matches[1] }
+        if ($Line -match "Verzió\s+v?(\d+\.\d+\.\d+)") { return $Matches }
     }
     return "0.0.0"
 }
@@ -85,7 +82,6 @@ if ($PSScriptRoot -ne $TargetDir -or $CurrentVersion -gt $InstalledVersion) {
         Write-Host "[!] Hiba tortent a szinkronizalas soran!" -ForegroundColor Red
     }
 
-    # MEGAKADÁLYOZZUK AZ ÁTUGRÁST: Megnyitjuk a logot és megállunk, hogy látszódjon ha piros hiba volt!
     Write-Log "Frissitesi folyamat kesz. Log megnyitasa es konzol megallitasa..."
     [System.Diagnostics.Process]::Start("notepad.exe", $LogFile) | Out-Null
 
@@ -127,7 +123,7 @@ $ComputerVendor = (Get-CimInstance -ClassName Win32_ComputerSystem).Manufacturer
 Write-Log "Rendszer vizsgalat: Windows $OSVersion | Gyarto: $ComputerVendor"
 
 # --- 5. KERESŐ MEGHÍVÁSA ---
-$SearchingScript = [System.IO.Path]::Combine($TargetDir, "Scripts", "Searching.ps1")
+$SearchingScript = "$TargetDir\Scripts\Searching.ps1"
 if ([System.IO.File]::Exists($SearchingScript)) {
     . $SearchingScript
 } else {
@@ -136,9 +132,9 @@ if ([System.IO.File]::Exists($SearchingScript)) {
 }
 
 # --- LEZÁRÁS ÉS AUTOMATIKUS LOG MEGNYITÁS ---
-[uint32]$ResetFlags = 0x80000000
-$Win32Sleep::SetThreadExecutionState($ResetFlags) | Out-Null
-Write-Log "Bloatware Killer v0.1.7 futasa befejezodott."
+# JAVÍTVA: [uint32] helyett direkt C# bitmaszk tiszta átadással a túlcsordulási hiba ellen
+$Win32Sleep::SetThreadExecutionState([uint32]0x80000000) | Out-Null
+Write-Log "Bloatware Killer v0.1.9 futasa befejezodott."
 
 Write-Log "Minden folyamat lezárult. Vegleges logfajl megnyitasa..."
 [System.Diagnostics.Process]::Start("notepad.exe", $LogFile) | Out-Null
