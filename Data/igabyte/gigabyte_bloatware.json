@@ -1,0 +1,22 @@
+[
+  {
+    "FileVersion": "v0.1.16",
+    "Description": "RTS Bloatware Killer - Gigabyte Aorus es Desktop PC adatbazis."
+  },
+  {
+    "Name": "GIGABYTE Control Center",
+    "RegistryName": "GIGABYTEControlCenter",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "BIOS-bol visszatelepulo, sulyos CPU-terhelest okozo asztali bloatware."
+  },
+  {
+    "Name": "GIGABYTE APP Center",
+    "RegistryName": "GIGABYTEAppCenter",
+    "MinWinVersion": "7",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Elavult segedprogramokat es reklamokat hatterben letolto alkalmazas."
+  }
+]
