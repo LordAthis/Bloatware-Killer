@@ -1,5 +1,8 @@
-# Verzió: v0.1.16
 [
+  {
+    "FileVersion": "v0.1.16",
+    "Description": "RTS Bloatware Killer - Dell Laptop es Desktop PC adatbazis."
+  },
   {
     "Name": "Dell SupportAssist",
     "RegistryName": "SupportAssist",
