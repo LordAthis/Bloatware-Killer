@@ -1,6 +1,6 @@
 #
 # Bloatware Killer - Vegrehajto / Eltavolito modul (.NET alapon)
-# Verzio 0.1
+# Verzio 0.1.2
 #
 
 Write-Log "Killer modul elinditva. Takaritas megkezdodott..."
