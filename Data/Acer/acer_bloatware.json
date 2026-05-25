@@ -1,0 +1,30 @@
+[
+    {
+    "FileVersion": "v0.1.16",
+    "Description": "RTS Bloatware Killer - HP Laptop es Desktop PC adatbazis."
+  },
+  {
+    "Name": "Acer Care Center",
+    "RegistryName": "AcerCareCenter",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Felesleges rendszertisztito es driver frissito, hatterben fut."
+  },
+  {
+    "Name": "Acer Quick Access",
+    "RegistryName": "AcerQuickAccess",
+    "MinWinVersion": "10",
+    "Action": "Keep",
+    "RegistryBlock": false,
+    "Comment": "A kijelzo gyorsmenueit es kekfenyszurojet kezeli, érdemes megtartani."
+  },
+  {
+    "Name": "Acer Portal",
+    "RegistryName": "AcerPortal",
+    "MinWinVersion": "7",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Elavult gyartoi felhos megosztas, felesleges maradvany."
+  }
+]
