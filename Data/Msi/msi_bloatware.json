@@ -1,0 +1,22 @@
+[
+  {
+    "FileVersion": "v0.1.16",
+    "Description": "RTS Bloatware Killer - MSI Gaming Desktop es Alaplapos PC adatbazis."
+  },
+  {
+    "Name": "MSI Center",
+    "RegistryName": "MSICenter",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Sulyos hatterbeli telemetria, instabil RGB szoftver, feleslegesen fut."
+  },
+  {
+    "Name": "MSI Driver Utility Installer",
+    "RegistryName": "MSIDriverUtilityInstaller",
+    "MinWinVersion": "10",
+    "Action": "Remove",
+    "RegistryBlock": true,
+    "Comment": "Minden Windows inditasnal felugro, driver-frissitonek alcazott bloatware."
+  }
+]
