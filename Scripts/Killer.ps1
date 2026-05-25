@@ -1,6 +1,6 @@
 #
 # Bloatware Killer - Vegrehajto / Eltavolito modul (.NET alapon)
-# Verzio 0.1.2
+# Verzio 0.1.5
 #
 
 
