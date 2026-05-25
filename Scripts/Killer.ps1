@@ -2,7 +2,7 @@
 # Aktuális Fájl: Killer.ps1
 # Bloatware Killer - Végrehajtó / Eltávolító modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.8
+# Verzió v0.1.10
 #
 
 Function Write-Log {
@@ -12,8 +12,7 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Killer modul v0.1.8 elinditva."
-# A Clear-Host ki lett szedve, hogy a betolteskori piros hibak ne tunjenek el!
+Write-Log "Killer modul v0.1.10 elinditva."
 Write-Host "-> Takaritas megkezdodott..." -ForegroundColor Cyan
 
 foreach ($App in $ToKill) {
@@ -25,7 +24,8 @@ foreach ($App in $ToKill) {
     }
 }
 
-$PostInstalledItems = Get-ItemProperty $UninstallPaths -ErrorAction SilentlyContinue
+# JAVÍTVA: Beolvassuk a friss, aktuális uninstall listát, hogy meglegyenek az UninstallString-ek!
+$CurrentInstalledItems = Get-ItemProperty $UninstallPaths -ErrorAction SilentlyContinue
 
 foreach ($App in $ToKill) {
     $ServiceKeywords = @("HP", "Wolf", "SureClick", "Analytics", "Dell", "SupportAssist", "Lenovo", "Vantage", "ImController")
@@ -42,7 +42,8 @@ foreach ($App in $ToKill) {
         }
     }
 
-    $Match = $PostInstalledItems | Where-Object { $_.DisplayName -like "*$($App.Name)*" -or $_.DisplayName -like "*$($App.RegistryName)*" }
+    # JAVÍTVA: A friss listából keressük ki a szoftvereket, így az uninstaller nem marad üres!
+    $Match = $CurrentInstalledItems | Where-Object { $_.DisplayName -like "*$($App.Name)*" -or $_.DisplayName -like "*$($App.RegistryName)*" }
     if ($Match) {
         foreach ($Item in $Match) {
             $Unstring = $Item.UninstallString
@@ -51,7 +52,8 @@ foreach ($App in $ToKill) {
                 Write-Host "[-] Win32 eltavolitas: $($App.Name)" -ForegroundColor Yellow
                 
                 if ($Unstring -like "msiexec*") {
-                    $Args = $Unstring -replace "msiexec.exe", "" -replace "/I", "/X" + " /qn /norestart"
+                    $Args = $Unstring -replace "msiexec.exe", "" -replace "/I", "/X"
+                    $Args += " /qn /norestart"
                     try {
                         $Proc = [System.Diagnostics.Process]::Start("msiexec.exe", $Args.Trim())
                         $Proc.WaitForExit()
@@ -114,15 +116,12 @@ foreach ($App in $ToKill) {
     }
 }
 
-# --- RENDERSZINTŰ PS HIBÁK KIOLVASÁSA ÉS KÖTELEZŐ LOGOLÁSA ---
 if ($Error.Count -gt 0) {
     Write-Log "A futas soran keletkezett rendszerhibak mentese..." "WARN"
     foreach ($Err in $Error) {
-        # Beleirjuk a logfajlba a pontos piros hiba szoveget
         Write-Log "Konzol Hiba: $($Err.Exception.Message) | Hely: $($Err.InvocationInfo.ScriptLineNumber). sor" "ERROR"
     }
 }
 
 Write-Host "--------------------------------------------------"
 Write-Log "Takaritasi statisztika -> Siker: $SuccessCount, Hiba: $FailCount"
-
