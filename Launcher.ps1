@@ -1,8 +1,8 @@
 # 
 # Aktuális Fájl: Launcher.ps1
 # Bloatware Killer Launcher - Az RTS ökoszisztéma része.
-# Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.3
+# Gyártóspecificus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
+# Verzió v0.1.4
 #
 
 # --- 1. JOGOSULTSÁG EMELÉS .NET ALAPON ---
@@ -37,13 +37,12 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Bloatware Killer v0.1.3 elinditva."
+Write-Log "Bloatware Killer v0.1.4 elinditva."
 
 # --- 2. VERZIÓELLENŐRZÉS ÉS TELEPÍTÉS/FRISSÍTÉS .NET SEGÍTSÉGÉVEL ---
 Function Get-ScriptVersion {
     Param([string]$FilePath)
     if (-not [System.IO.File]::Exists($FilePath)) { return "0.0.0" }
-    # Beolvassuk az elso 10 sort a fejlecbol
     $Header = Get-Content -Path $FilePath -TotalCount 10
     foreach ($Line in $Header) {
         if ($Line -match "Verzió\s+v?(\d+\.\d+\.\d+)") {
@@ -61,7 +60,6 @@ $InstalledVersion = [System.Version]$InstalledVersionString
 
 Write-Log "Futasi verzio: $CurrentVersionString | Telepitett verzio: $InstalledVersionString"
 
-# Ha nem a szervizmappából futunk, VAGY a futtatott verzió újabb, mint ami a gépen van
 if ($PSScriptRoot -ne $TargetDir -or $CurrentVersion -gt $InstalledVersion) {
     if ($CurrentVersion -gt $InstalledVersion) {
         Write-Log "Ujabb verzio detektalva ($CurrentVersionString > $InstalledVersionString). Frissites..."
@@ -73,7 +71,6 @@ if ($PSScriptRoot -ne $TargetDir -or $CurrentVersion -gt $InstalledVersion) {
         [System.IO.Directory]::CreateDirectory($TargetDir) | Out-Null 
     }
     
-    # Szkriptek átmásolása (felülírás kényszerítésével)
     Copy-Item -Path "$PSScriptRoot\*" -Destination $TargetDir -Recurse -Force
     Write-Log "Szinkronizacio kesz. Ujrainditas az RTS kornyezetbol..."
     
@@ -123,10 +120,15 @@ if ([System.IO.File]::Exists($SearchingScript)) {
     . $SearchingScript
 } else {
     Write-Log "Hiba: A Searching.ps1 nem talalhato!" "ERROR"
-    Exit
 }
 
 # --- ALVÁS VISSZAÁLLÍTÁSA ---
 [uint32]$ResetFlags = 0x80000000
 $Win32Sleep::SetThreadExecutionState($ResetFlags) | Out-Null
-Write-Log "Bloatware Killer v0.1.3 futasa befejezodott."
+Write-Log "Bloatware Killer v0.1.4 futasa befejezodott."
+
+# --- AZ ABLAK BEZÁRÁSÁNAK ABSZOLÚT MEGGÁTLÁSA ---
+Write-Host "`n[VEGZETT] A folyamat befejezodott." -ForegroundColor Green
+Write-Host "Nyomj meg egy gombot a konzolablak bezarasahoz..." -ForegroundColor Cyan
+Write-Log "Szkript megallitva a Launcher vegen, varakozas a gombnyomasra..."
+[System.Console]::ReadKey($true) | Out-Null
