@@ -1,6 +1,6 @@
 # Bloatware Killer Launcher - Az RTS ökoszisztéma része.
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1
+# Verzió v0.1.2
 #
 
 
