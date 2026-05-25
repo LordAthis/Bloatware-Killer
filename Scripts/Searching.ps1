@@ -2,10 +2,9 @@
 # Aktuális Fájl: Searching.ps1
 # Bloatware Killer - Kereső és kiértékelő modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.8
+# Verzió v0.1.9
 #
 
-# Biztosítjuk a folyamatos logírást a modulon belül is
 Function Write-Log {
     Param([string]$Message, [string]$Type = "INFO")
     $LogLine = "[$([System.DateTime]::Now.ToString('yyyy-MM-dd HH:mm:ss'))] [$Type] $Message"
@@ -13,7 +12,7 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Searching modul v0.1.7 elinditva."
+Write-Log "Searching modul v0.1.9 elinditva."
 
 $VendorFolder = ""
 if ($ComputerVendor -like "*HP*" -or $ComputerVendor -like "*Hewlett-Packard*") { $VendorFolder = "Hp" }
@@ -62,7 +61,7 @@ foreach ($App in $BloatwareDatabase) {
 
 Clear-Host
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "          BLOATWARE KILLER v0.1.7 - EREDMENYEK      " -ForegroundColor Cyan
+Write-Host "          BLOATWARE KILLER v0.1.9 - EREDMENYEK      " -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "Rendszer: Windows $OSVersion | Gyarto: $ComputerVendor"
 Write-Host "--------------------------------------------------"
@@ -76,8 +75,15 @@ if ($ToKill.Count -gt 0) {
     
     $Choice = Read-Host "`nSzeretned elinditani a takaritast? (I/N)"
     if ($Choice -eq "I" -or $Choice -eq "i") {
-        Write-Log "Szervizes joovaahagyta a takaritast. Killer.ps1 inditasa..."
-        . [System.IO.Path]::Combine($TargetDir, "Scripts", "Killer.ps1")
+        Write-Log "Szervizes joovaahagyta a takaritast. Elokeszites a Killer.ps1 inditasara..."
+        
+        # --- IDEIGLENES VÁRAKOZTATÁS A KÉRÉSEDRE ---
+        Write-Host "`n[TESZT] Nyomj meg egy gombot a Killer.ps1 modul betoltese elott..." -ForegroundColor Magentai
+        [System.Console]::ReadKey($true) | Out-Null
+        
+        # JAVÍTVA: Előre kiértékelt string útvonal a dot-sourcing híváshoz, így nincs parancshiba!
+        $KillerScriptPath = "$TargetDir\Scripts\Killer.ps1"
+        . $KillerScriptPath
     } else {
         Write-Log "Szervizes elutasitotta a takaritast." "WARN"
     }
@@ -94,7 +100,8 @@ if ($ToKill.Count -gt 0) {
         $Rechoice = Read-Host "`nMinden tiszta. Szeretnel valamit VISSZATELEPITENI? (I/N)"
         if ($Rechoice -eq "I" -or $Rechoice -eq "i") {
             Write-Log "Szervizes a helyreallitast valasztotta. ReInstall.ps1 inditasa..."
-            . [System.IO.Path]::Combine($TargetDir, "Scripts", "ReInstall.ps1")
+            $ReinstallScriptPath = "$TargetDir\Scripts\ReInstall.ps1"
+            . $ReinstallScriptPath
         }
     }
 }
