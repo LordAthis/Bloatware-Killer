@@ -2,7 +2,7 @@
 # Aktuális Fájl: Searching.ps1
 # Bloatware Killer - Kereső és kiértékelő modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.11
+# Verzió v0.1.16
 #
 
 Function Write-Log {
@@ -12,7 +12,8 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Searching modul v0.1.11 elinditva."
+# Explicit módon naplózzuk a fájl saját verzióját
+Write-Log "Searching modul v0.1.16 elinditva."
 
 $VendorFolder = ""
 if ($ComputerVendor -like "*HP*" -or $ComputerVendor -like "*Hewlett-Packard*") { $VendorFolder = "Hp" }
@@ -61,7 +62,7 @@ foreach ($App in $BloatwareDatabase) {
 
 Clear-Host
 Write-Host "==================================================" -ForegroundColor Cyan
-Write-Host "          BLOATWARE KILLER v0.1.11 - EREDMENYEK     " -ForegroundColor Cyan
+Write-Host "          BLOATWARE KILLER v0.1.16 - EREDMENYEK     " -ForegroundColor Cyan
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "Rendszer: Windows $OSVersion | Gyarto: $ComputerVendor"
 Write-Host "--------------------------------------------------"
