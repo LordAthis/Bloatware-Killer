@@ -1,6 +1,6 @@
 #
 # Bloatware Killer - Visszaallito / Helyreallito modul (.NET alapon)
-# Verzió: 0.1
+# Verzió: 0.1.2
 # A kommentek ekezetesek, a kiirt uzenetek ekezetmentesek.
 #
 
