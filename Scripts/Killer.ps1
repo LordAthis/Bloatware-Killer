@@ -2,7 +2,7 @@
 # Aktuális Fájl: Killer.ps1
 # Bloatware Killer - Végrehajtó / Eltávolító modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.10
+# Verzió v0.1.11
 #
 
 Function Write-Log {
@@ -12,11 +12,11 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Killer modul v0.1.10 elinditva."
+Write-Log "Killer modul v0.1.11 elinditva."
 Write-Host "-> Takaritas megkezdodott..." -ForegroundColor Cyan
 
 foreach ($App in $ToKill) {
-    if ($App.RegistryName -eq "HPSmart" -or $App.RegistryName -eq "HPJumpstart" -or $App.RegistryName -eq "DellSmartByte" -or $App.RegistryName -eq "LenovoNow") {
+    if ($App.RegistryName -eq "HPSmart" -or $App.RegistryName -eq "HPJumpstart" -or $App.RegistryName -or "DellSmartByte" -or $App.RegistryName -eq "LenovoNow") {
         Write-Log "UWP eltavolitas: $($App.Name)"
         Write-Host "[-] UWP eltavolitas: $($App.Name)" -ForegroundColor Yellow
         Get-AppxPackage -AllUsers | Where-Object { $_.Name -like "*$($App.RegistryName)*" } | Remove-AppxPackage -ErrorAction SilentlyContinue
@@ -24,7 +24,6 @@ foreach ($App in $ToKill) {
     }
 }
 
-# JAVÍTVA: Beolvassuk a friss, aktuális uninstall listát, hogy meglegyenek az UninstallString-ek!
 $CurrentInstalledItems = Get-ItemProperty $UninstallPaths -ErrorAction SilentlyContinue
 
 foreach ($App in $ToKill) {
@@ -42,20 +41,21 @@ foreach ($App in $ToKill) {
         }
     }
 
-    # JAVÍTVA: A friss listából keressük ki a szoftvereket, így az uninstaller nem marad üres!
     $Match = $CurrentInstalledItems | Where-Object { $_.DisplayName -like "*$($App.Name)*" -or $_.DisplayName -like "*$($App.RegistryName)*" }
     if ($Match) {
         foreach ($Item in $Match) {
             $Unstring = $Item.UninstallString
             if ($Unstring) {
-                Write-Log "Win32 eltavolitas folyamatban: $($App.Name)"
-                Write-Host "[-] Win32 eltavolitas: $($App.Name)" -ForegroundColor Yellow
+                Write-Log "Win32 eltavolitas inditasa: $($App.Name)"
+                Write-Host "[-] Win32 eltavolitas folyamatban: $($App.Name)..." -ForegroundColor Yellow
                 
+                # JAVÍTVA: Az msiexec argumentum-összefűzés tiszta és hibátlan lett
                 if ($Unstring -like "msiexec*") {
-                    $Args = $Unstring -replace "msiexec.exe", "" -replace "/I", "/X"
-                    $Args += " /qn /norestart"
+                    $CleanArgs = $Unstring -replace "msiexec.exe", "" -replace "/I", "/X"
+                    $Args = "$($CleanArgs.Trim()) /qn /norestart"
                     try {
-                        $Proc = [System.Diagnostics.Process]::Start("msiexec.exe", $Args.Trim())
+                        $Proc = [System.Diagnostics.Process]::Start("msiexec.exe", $Args)
+                        # BIZTOSÍTVA: Kötelezően megvárjuk a háttérfolyamat végét!
                         $Proc.WaitForExit()
                     } catch { Write-Log "MSI Hiba: $($App.Name)" "WARN" }
                 } else {
@@ -65,6 +65,7 @@ foreach ($App in $ToKill) {
                         $Args = "/S /silent /verysilent /qn /norestart"
                         try {
                             $Proc = [System.Diagnostics.Process]::Start($ExePath, $Args)
+                            # BIZTOSÍTVA: Kötelezően megvárjuk az EXE uninstaller lefutását!
                             $Proc.WaitForExit()
                         } catch { Write-Log "EXE Hiba: $($App.Name)" "WARN" }
                     }
@@ -93,7 +94,11 @@ foreach ($Path in $GarbagePaths) {
     }
 }
 
-# --- SUMMARY (ÖSSZEGZÉS) KIÍRÁSA ---
+# JAVÍTVA: Adunk a rendszernek 3 másodpercet, hogy a lemezműveletek és a registry frissüljenek
+Write-Log "Varakozas a registry frissulesere a kiertekeles elott..."
+[System.Threading.Thread]::Sleep(3000)
+
+# --- SUMMARY (ÖSSZEGZÉS) VALÓS IDEJŰ LEKÉRDEZÉSSEL ---
 Clear-Host
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host "          TAKARITAS VEGEREDMENYE (SUMMARY)         " -ForegroundColor Cyan
@@ -101,6 +106,7 @@ Write-Host "==================================================" -ForegroundColor
 
 $SuccessCount = 0
 $FailCount = 0
+# Valódi, friss lekérdezés a lemezről a lefutás után
 $FinalCheck = Get-ItemProperty $UninstallPaths -ErrorAction SilentlyContinue
 
 foreach ($App in $ToKill) {
@@ -119,7 +125,9 @@ foreach ($App in $ToKill) {
 if ($Error.Count -gt 0) {
     Write-Log "A futas soran keletkezett rendszerhibak mentese..." "WARN"
     foreach ($Err in $Error) {
-        Write-Log "Konzol Hiba: $($Err.Exception.Message) | Hely: $($Err.InvocationInfo.ScriptLineNumber). sor" "ERROR"
+        if ($Err.Exception -and $Err.InvocationInfo) {
+            Write-Log "Konzol Hiba: $($Err.Exception.Message) | Hely: $($Err.InvocationInfo.ScriptLineNumber). sor" "ERROR"
+        }
     }
 }
 
