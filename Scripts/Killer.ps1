@@ -2,7 +2,7 @@
 # Aktuális Fájl: Killer.ps1
 # Bloatware Killer - Végrehajtó / Eltávolító modul
 # Gyártóspecifikus bloatware elemek automatizált keresése, naplózása, kezelése, és törlése.
-# Verzió v0.1.13
+# Verzió v0.1.14
 #
 
 Function Write-Log {
@@ -12,13 +12,13 @@ Function Write-Log {
     [System.IO.File]::AppendAllText($LogFile, $LogLine + [System.Environment]::NewLine)
 }
 
-Write-Log "Killer modul v0.1.13 elinditva."
-Write-Host "-> Erőszakos háttértakarítás megkezdődött..." -ForegroundColor Cyan
+Write-Log "Killer modul v0.1.14 elinditva."
+Write-Host "-> Erosszakos hattertakaritas finomhangolasa..." -ForegroundColor Cyan
 
 # --- 1. HP SPECIFIKUS "NUKLEÁRIS" TÖRLÉSEK ---
 foreach ($App in $ToKill) {
     
-    # HP Documentation (Ez már bizonyítottan működik, de benne hagyjuk)
+    # HP Documentation
     if ($App.Name -eq "HP Documentation") {
         $DocCmd = "C:\Program Files\HP\Documentation\Doc_uninstall.cmd"
         if (Test-Path $DocCmd) {
@@ -28,37 +28,47 @@ foreach ($App in $ToKill) {
                 $Proc.WaitForExit()
             } catch { Write-Log "CMD Hiba: HP Documentation" "WARN" }
         }
-        # Registry takarítás biztos, ami biztos
-        Remove-Item -Path "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\HP Documentation" -Force -Recurse -ErrorAction SilentlyContinue
-        Remove-Item -Path "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\HP Documentation" -Force -Recurse -ErrorAction SilentlyContinue
+        # JAVÍTVA: Csak akkor töröljük a registry-t, ha létezik, megelőzve a piros hibát
+        $RegDoc1 = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\HP Documentation"
+        $RegDoc2 = "HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\HP Documentation"
+        if (Test-Path $RegDoc1) { Remove-Item -Path $RegDoc1 -Force -Recurse -ErrorAction SilentlyContinue }
+        if (Test-Path $RegDoc2) { Remove-Item -Path $RegDoc2 -Force -Recurse -ErrorAction SilentlyContinue }
     }
 
-    # HP Connection Optimizer - A PROBLÉMÁS ELEM
+    # HP Connection Optimizer
     if ($App.Name -eq "HP Connection Optimizer") {
-        Write-Log "HP Connection Optimizer: Többlépcsős, erőszakos eltávolítás indítása..."
+        Write-Log "HP Connection Optimizer: Erőteljes eltávolítás..."
         
         # Lépés 1: Szolgáltatás likvidálása
-        Write-Host " [1/4] Szolgáltatás leállítása..." -ForegroundColor Yellow
         sc.exe stop "HPConnectionOptimizerService" | Out-Null
         sc.exe delete "HPConnectionOptimizerService" | Out-Null
         
-        # Lépés 2: WMIC alapú eltávolítás (Ez néha okosabb, mint az msiexec)
-        Write-Host " [2/4] WMIC uninstall kísérlet..." -ForegroundColor Yellow
+        # Lépés 2: WMIC alapú eltávolítás
         try {
-            $WmicProc = Start-Process -FilePath "wmic.exe" -ArgumentList "product where ""name like 'HP Connection Optimizer'"" call uninstall /nointeractive" -PassThru -WindowStyle Hidden
-            $WmicProc.WaitForExit()
-        } catch { Write-Log "WMIC hiba, lépés tovább..." "WARN" }
+            $WmicProc = Start-Process -FilePath "wmic.exe" -ArgumentList "product where ""name like 'HP Connection Optimizer'"" call uninstall /nointeractive" -PassThru -WindowStyle Hidden -ErrorAction SilentlyContinue
+            if ($WmicProc) { $WmicProc.WaitForExit() }
+        } catch { Write-Log "WMIC hiba, lepes tovabb..." "WARN" }
 
-        # Lépés 3: Registry kulcs "kitépése" (Hogy ne látszódjon telepítettnek)
-        Write-Host " [3/4] Registry kulcsok kényszerített törlése..." -ForegroundColor Yellow
-        # GUID alapú kulcs
-        Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{6468C4A5-E47E-405F-B675-A70A70983EA6}" -Force -Recurse -ErrorAction SilentlyContinue
-        Remove-Item -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{6468C4A5-E47E-405F-B675-A70A70983EA6}" -Force -Recurse -ErrorAction SilentlyContinue
-        # Név alapú keresés és törlés (ha más GUID-on lenne)
-        Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.GetValue("DisplayName") -like "*HP Connection Optimizer*" } | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+        # Lépés 3: Standard MSI eltávolítás (csak ha a fájl elérhető, elkerülve a 'rendszer nem találja a fájlt' hibát)
+        if (Test-Path "C:\Windows\Installer") {
+            try {
+                $Proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/X{6468C4A5-E47E-405F-B675-A70A70983EA6} /qn /norestart" -PassThru -WindowStyle Hidden -ErrorAction SilentlyContinue
+                if ($Proc) { $Proc.WaitForExit() }
+            } catch { Write-Log "MSI nem szukseges, mar torolve." }
+        }
 
-        # Lépés 4: Fizikai fájlok törlése a lemezről
-        Write-Host " [4/4] Programkönyvtárak törlése..." -ForegroundColor Yellow
+        # Lépés 4: Registry kulcs "kitépése" (JAVÍTVA: Csak ha még létezik!)
+        $RegOpt1 = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{6468C4A5-E47E-405F-B675-A70A70983EA6}"
+        $RegOpt2 = "HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{6468C4A5-E47E-405F-B675-A70A70983EA6}"
+        
+        if (Test-Path $RegOpt1) { Remove-Item -Path $RegOpt1 -Force -Recurse -ErrorAction SilentlyContinue }
+        if (Test-Path $RegOpt2) { Remove-Item -Path $RegOpt2 -Force -Recurse -ErrorAction SilentlyContinue }
+        
+        Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" -Recurse -ErrorAction SilentlyContinue | 
+            Where-Object { $_.GetValue("DisplayName") -like "*HP Connection Optimizer*" } | 
+            Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+
+        # Lépés 5: Fizikai fájlok törlése a lemezről
         $PathsToDelete = @(
             "C:\Program Files (x86)\HP\HP Connection Optimizer",
             "C:\Program Files\HP\HP Connection Optimizer",
@@ -67,10 +77,10 @@ foreach ($App in $ToKill) {
         foreach ($P in $PathsToDelete) {
             if (Test-Path $P) {
                 Remove-Item -Path $P -Force -Recurse -ErrorAction SilentlyContinue
-                Write-Log "Mappa törölve: $P"
+                Write-Log "Mappa torolve: $P"
             }
         }
-        Write-Log "HP Connection Optimizer tisztítás kész."
+        Write-Log "HP Connection Optimizer tisztitas kesz."
     }
 }
 
@@ -78,7 +88,6 @@ foreach ($App in $ToKill) {
 $CurrentInstalledItems = Get-ItemProperty $UninstallPaths -ErrorAction SilentlyContinue
 
 foreach ($App in $ToKill) {
-    # A HP specifikusokat már elintéztük fent, átugorjuk őket
     if ($App.Name -eq "HP Documentation" -or $App.Name -eq "HP Connection Optimizer") { continue }
 
     $Match = $CurrentInstalledItems | Where-Object { $_.DisplayName -like "*$($App.Name)*" -or $_.DisplayName -like "*$($App.RegistryName)*" }
@@ -95,7 +104,6 @@ foreach ($App in $ToKill) {
                         $Proc.WaitForExit()
                     } catch { Write-Log "MSI Hiba: $($App.Name)" "WARN" }
                 } else {
-                    # EXE kezelés
                     $CleanUnstring = $Unstring -replace '"', ''
                     if ($CleanUnstring -like "*.exe*") {
                         $ExePath = $CleanUnstring.Substring(0, $CleanUnstring.IndexOf(".exe") + 4)
@@ -109,7 +117,6 @@ foreach ($App in $ToKill) {
         }
     }
 
-    # IFEO tiltás
     if ($App.RegistryBlock) {
         $IfeoPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\$($App.RegistryName).exe"
         if (-not (Test-Path $IfeoPath)) { New-Item -Path $IfeoPath -Force | Out-Null }
@@ -128,7 +135,7 @@ foreach ($Path in $GarbagePaths) {
     }
 }
 
-# --- VÁRAKOZÁS ÉS ELLENŐRZÉS ---
+# --- VÁRAKOZÁS ÉS VALÓS ELLENŐRZÉS ---
 Write-Log "Varakozas a registry frissulesere..."
 [System.Threading.Thread]::Sleep(3000)
 
@@ -150,7 +157,7 @@ foreach ($App in $ToKill) {
         $SuccessCount++
     } else {
         Write-Host " [SIKERTELEN] $($App.Name) meg mindig a registry-ben van!" -ForegroundColor Red
-        Write-Log "Még mindig detektálható: $($App.Name)" "WARN"
+        Write-Log "Meg mindig detektalhato: $($App.Name)" "WARN"
         $FailCount++
     }
 }
@@ -158,7 +165,10 @@ foreach ($App in $ToKill) {
 if ($Error.Count -gt 0) {
     foreach ($Err in $Error) {
         if ($Err.Exception -and $Err.InvocationInfo) {
-            Write-Log "Rendszer Hiba: $($Err.Exception.Message) | Sor: $($Err.InvocationInfo.ScriptLineNumber)" "ERROR"
+            # Kiszűrjük a felügyelt hibákat, hogy csak a valódi problémák kerüljenek naplózásra
+            if ($Err.Exception.Message -notlike "*HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall*" -and $Err.Exception.Message -notlike "*A rendszer nem találja a megadott fájlt*") {
+                Write-Log "Rendszer Hiba: $($Err.Exception.Message) | Sor: $($Err.InvocationInfo.ScriptLineNumber)" "ERROR"
+            }
         }
     }
 }
